@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -18,6 +19,7 @@ export default function ProfileScreen() {
   }
 
   const entitlement = household?.subscription?.entitlement ?? 'free';
+  const isPremium = entitlement !== 'free';
 
   return (
     <Screen edges={['top']}>
@@ -32,8 +34,14 @@ export default function ProfileScreen() {
           <ListRow
             title={household?.name ?? 'My Home'}
             subtitle="Household"
-            trailing={<Badge label={entitlement === 'free' ? 'Free plan' : 'Premium'} tone={entitlement === 'free' ? 'neutral' : 'accent'} />}
+            trailing={<Badge label={isPremium ? 'Premium' : 'Free plan'} tone={isPremium ? 'accent' : 'neutral'} />}
+            onPress={isPremium ? undefined : () => router.push('/subscription/paywall')}
+            showChevron={!isPremium}
           />
+        </Card>
+
+        <Card>
+          <ListRow title="Family sharing" showChevron onPress={() => router.push('/family')} />
         </Card>
 
         <Button label="Sign out" variant="secondary" onPress={handleSignOut} loading={signingOut} />

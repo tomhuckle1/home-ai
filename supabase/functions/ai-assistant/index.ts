@@ -53,6 +53,24 @@ Deno.serve(async (req) => {
   } = await supabase.auth.getUser();
   if (!user) return jsonResponse({ error: 'Not authenticated' }, 401);
 
+  // AI assistant is a Premium feature (see supabase/migrations/20260806000008_entitlements.sql).
+  // Checked here, not just hidden in the UI — the same principle as the
+  // DB-level limits on properties/documents/family sharing.
+  const { data: property, error: propertyError } = await supabase
+    .from('properties')
+    .select('household_id')
+    .eq('id', propertyId)
+    .single();
+  if (propertyError || !property) return jsonResponse({ error: 'Property not found or not accessible' }, 404);
+
+  const { data: isPremium, error: premiumError } = await supabase.rpc('is_premium', {
+    _household_id: property.household_id,
+  });
+  if (premiumError) return jsonResponse({ error: premiumError.message }, 500);
+  if (!isPremium) {
+    return jsonResponse({ error: 'premium_required', message: 'The AI assistant is a Premium feature.' }, 402);
+  }
+
   try {
     const [assetsResult, documentsResult, apiKey] = await Promise.all([
       supabase

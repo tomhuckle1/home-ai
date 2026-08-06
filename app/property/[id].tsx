@@ -35,6 +35,7 @@ export default function PropertyDetailScreen() {
             <Button label="Add room" onPress={() => router.push({ pathname: '/room/new', params: { propertyId: id } })} />
           </View>
         </View>
+        <Button label="Home Passport" variant="ghost" onPress={() => router.push(`/passport/${id}`)} />
       </View>
 
       {isLoading ? (

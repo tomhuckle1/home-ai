@@ -91,7 +91,21 @@ function scoreTone(score: number): ScoreTone {
 
 function HealthScoreCard({ propertyId }: { propertyId: string }) {
   const theme = useTheme();
-  const { data, isLoading } = useHomeHealthScore(propertyId);
+  const { data, isLoading, error } = useHomeHealthScore(propertyId);
+
+  if (error) {
+    return (
+      <Card onPress={() => router.push('/subscription/paywall')}>
+        <ListRow
+          leading={<Text style={{ fontSize: 20 }}>🩺</Text>}
+          title="Home Health Score"
+          subtitle="See how well-documented and up to date your home is"
+          trailing={<Badge label="Premium" tone="accent" />}
+          showChevron
+        />
+      </Card>
+    );
+  }
 
   if (isLoading || !data) {
     return (

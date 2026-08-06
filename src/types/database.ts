@@ -327,6 +327,7 @@ export type PassportShareRow = {
 }
 export type PassportShareInsert = Pick<PassportShareRow, 'property_id' | 'expires_at'> &
   Partial<Pick<PassportShareRow, 'created_by'>>;
+export type PassportShareUpdate = Partial<Pick<PassportShareRow, 'revoked_at' | 'viewed_count'>>;
 
 export type NotificationLogRow = {
   id: string;
@@ -357,6 +358,14 @@ export type Database = {
       match_document_chunks: {
         Args: { _property_id: string; _query_embedding: string; _match_count?: number };
         Returns: { document_id: string; content: string; similarity: number }[];
+      };
+      accept_household_invite: {
+        Args: { _household_member_id: string };
+        Returns: undefined;
+      };
+      is_premium: {
+        Args: { _household_id: string };
+        Returns: boolean;
       };
     };
     Tables: {
@@ -419,7 +428,7 @@ export type Database = {
       passport_shares: {
         Row: PassportShareRow;
         Insert: PassportShareInsert;
-        Update: Partial<PassportShareInsert>;
+        Update: PassportShareUpdate;
       } & NoRelationships;
       notification_log: {
         Row: NotificationLogRow;

@@ -76,10 +76,22 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
           name="timeline/new"
           options={{ headerShown: true, title: 'Add to timeline', presentation: 'modal', headerLeft: closeButton }}
         />
+        <Stack.Screen
+          name="subscription/paywall"
+          options={{ headerShown: true, title: 'Premium', presentation: 'modal', headerLeft: closeButton }}
+        />
+        <Stack.Screen name="family/index" options={{ headerShown: true, title: 'Family sharing' }} />
+        <Stack.Screen
+          name="family/invite"
+          options={{ headerShown: true, title: 'Invite family', presentation: 'modal', headerLeft: closeButton }}
+        />
+        <Stack.Screen name="passport/[propertyId]" options={{ headerShown: true, title: 'Home Passport' }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="(auth)" />
       </Stack.Protected>
+      {/* Public — reachable regardless of auth state, gated only by the passport share token itself. */}
+      <Stack.Screen name="passport-view/[token]" options={{ headerShown: true, title: 'Home Passport' }} />
       <Stack.Screen name="+not-found" options={{ headerShown: true }} />
     </Stack>
   );
