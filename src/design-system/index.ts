@@ -5,6 +5,7 @@ export * from './ChipSelect';
 export * from './EmptyState';
 export * from './HeaderCloseButton';
 export * from './ListRow';
+export * from './RootErrorBoundary';
 export * from './Screen';
 export * from './Text';
 export * from './TextField';

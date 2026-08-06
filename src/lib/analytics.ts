@@ -52,3 +52,7 @@ export function identifyUser(userId: string, properties?: PostHogEventProperties
 export function resetAnalytics() {
   getAnalyticsClient()?.reset();
 }
+
+export function captureException(error: unknown, context?: PostHogEventProperties) {
+  getAnalyticsClient()?.captureException(error, context);
+}

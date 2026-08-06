@@ -4,13 +4,15 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
-import { HeaderCloseButton, ThemeProvider, useTheme } from '@/src/design-system';
+import { HeaderCloseButton, RootErrorBoundary, ThemeProvider, useTheme } from '@/src/design-system';
 import { useSession, useSessionSync } from '@/src/hooks/useSession';
+import { installGlobalErrorHandlers } from '@/src/lib/crashReporting';
 import { queryClient } from '@/src/lib/queryClient';
 
-export { ErrorBoundary } from 'expo-router';
+export { RootErrorBoundary as ErrorBoundary };
 
 SplashScreen.preventAutoHideAsync();
+installGlobalErrorHandlers();
 
 export default function RootLayout() {
   useSessionSync();

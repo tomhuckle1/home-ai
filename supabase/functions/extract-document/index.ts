@@ -4,7 +4,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
-import { createEmbedding } from '../_shared/openai.ts';
+import { createEmbedding, extractUsage, logAiUsage } from '../_shared/openai.ts';
 import {
   buildEmbeddingInput,
   buildOpenAiRequestBody,
@@ -43,13 +43,14 @@ Deno.serve(async (req) => {
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
-    .select('id, file_path, property_id')
+    .select('id, file_path, property_id, properties(household_id)')
     .eq('id', documentId)
     .single();
 
   if (fetchError || !document) {
     return jsonResponse({ error: 'Document not found or not accessible' }, 404);
   }
+  const householdId = (document as { properties?: { household_id?: string } }).properties?.household_id;
 
   await supabase.from('documents').update({ extraction_status: 'processing' }).eq('id', documentId);
 
@@ -59,8 +60,18 @@ Deno.serve(async (req) => {
       .createSignedUrl(document.file_path, SIGNED_URL_TTL_SECONDS);
     if (signedUrlError || !signedUrlData) throw new Error(signedUrlError?.message ?? 'Could not sign file URL');
 
-    const raw = await callOpenAi(signedUrlData.signedUrl);
+    const { result: raw, usage: extractionUsage } = await callOpenAi(signedUrlData.signedUrl);
     const normalized = normalizeExtractionResult(raw);
+
+    if (householdId) {
+      await logAiUsage(supabase, {
+        householdId,
+        propertyId: document.property_id,
+        kind: 'document_extraction',
+        model: OPENAI_MODEL,
+        usage: extractionUsage,
+      });
+    }
 
     const { error: updateError } = await supabase
       .from('documents')
@@ -77,7 +88,7 @@ Deno.serve(async (req) => {
     // if embedding generation fails, so this doesn't roll back the update above.
     try {
       const apiKey = Deno.env.get('OPENAI_API_KEY')!;
-      const embedding = await createEmbedding(apiKey, buildEmbeddingInput(normalized));
+      const { embedding, usage: embeddingUsage } = await createEmbedding(apiKey, buildEmbeddingInput(normalized));
       await supabase.from('document_chunks').insert({
         document_id: documentId,
         property_id: document.property_id,
@@ -85,6 +96,15 @@ Deno.serve(async (req) => {
         content: buildEmbeddingInput(normalized),
         embedding,
       });
+      if (householdId) {
+        await logAiUsage(supabase, {
+          householdId,
+          propertyId: document.property_id,
+          kind: 'embedding',
+          model: 'text-embedding-3-small',
+          usage: embeddingUsage,
+        });
+      }
     } catch (embeddingError) {
       console.error('Embedding generation failed for document', documentId, embeddingError);
     }
@@ -100,7 +120,7 @@ Deno.serve(async (req) => {
   }
 });
 
-async function callOpenAi(imageUrl: string): Promise<RawExtractionResult> {
+async function callOpenAi(imageUrl: string): Promise<{ result: RawExtractionResult; usage: ReturnType<typeof extractUsage> }> {
   const apiKey = Deno.env.get('OPENAI_API_KEY');
   if (!apiKey) throw new Error('OPENAI_API_KEY is not configured for this Supabase project');
 
@@ -119,7 +139,7 @@ async function callOpenAi(imageUrl: string): Promise<RawExtractionResult> {
   const content = payload.choices?.[0]?.message?.content;
   if (typeof content !== 'string') throw new Error('OpenAI response did not contain extraction content');
 
-  return JSON.parse(content) as RawExtractionResult;
+  return { result: JSON.parse(content) as RawExtractionResult, usage: extractUsage(payload) };
 }
 
 function jsonResponse(body: unknown, status = 200) {

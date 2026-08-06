@@ -4,7 +4,7 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
-import { createEmbedding } from '../_shared/openai.ts';
+import { createEmbedding, extractUsage, logAiUsage } from '../_shared/openai.ts';
 import {
   buildAssistantRequestBody,
   normalizeAssistantResult,
@@ -103,7 +103,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ conversationId: conversation, answer, citations: [] });
     }
 
-    const questionEmbedding = await createEmbedding(apiKey, question);
+    const { embedding: questionEmbedding, usage: embeddingUsage } = await createEmbedding(apiKey, question);
+    await logAiUsage(supabase, {
+      householdId: property.household_id,
+      propertyId,
+      kind: 'embedding',
+      model: 'text-embedding-3-small',
+      usage: embeddingUsage,
+    });
     const { data: chunkRows, error: chunkError } = await supabase.rpc('match_document_chunks', {
       _property_id: propertyId,
       _query_embedding: questionEmbedding,
@@ -126,6 +133,14 @@ Deno.serve(async (req) => {
     const payload = await response.json();
     const content = payload.choices?.[0]?.message?.content;
     if (typeof content !== 'string') throw new Error('OpenAI response did not contain an answer');
+
+    await logAiUsage(supabase, {
+      householdId: property.household_id,
+      propertyId,
+      kind: 'ai_assistant',
+      model: CHAT_MODEL,
+      usage: extractUsage(payload),
+    });
 
     const raw = JSON.parse(content) as RawAssistantResult;
     const normalized = normalizeAssistantResult(raw, assets, documents);

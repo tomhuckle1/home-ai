@@ -105,6 +105,34 @@ export default function PaywallScreen() {
         ) : null}
 
         <Button label="Restore purchases" variant="ghost" onPress={handleRestore} loading={restore.isPending} />
+
+        {/* Apple App Store Review Guideline 3.1.2 requires this disclosure
+            and functional links near the purchase button for auto-renewable
+            subscriptions. */}
+        <View style={{ gap: theme.spacing.xxs }}>
+          <Text variant="caption" color="textTertiary">
+            Subscriptions renew automatically at the price shown unless cancelled at least 24 hours before the end of
+            the current period. Manage or cancel any time in your App Store or Play Store account settings.
+          </Text>
+          <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+            <Text
+              variant="caption"
+              color="accent"
+              accessibilityRole="link"
+              onPress={() => router.push('/legal/terms')}
+            >
+              Terms of Service
+            </Text>
+            <Text
+              variant="caption"
+              color="accent"
+              accessibilityRole="link"
+              onPress={() => router.push('/legal/privacy')}
+            >
+              Privacy Policy
+            </Text>
+          </View>
+        </View>
       </ScrollView>
     </Screen>
   );

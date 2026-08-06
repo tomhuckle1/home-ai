@@ -52,6 +52,7 @@ const palette = {
   grey100: '#EFEFF1',
   grey200: '#E4E4E7',
   grey400: '#A1A1AA',
+  grey450: '#8B8B93',
   grey500: '#71717A',
   grey600: '#52525B',
   grey900: '#111113',
@@ -88,7 +89,9 @@ export const lightColors: ThemeColors = {
   border: palette.grey200,
   textPrimary: palette.grey900,
   textSecondary: palette.grey600,
-  textTertiary: palette.grey400,
+  // grey500, not grey400 — grey400 on white is ~2.6:1, below WCAG AA for
+  // the caption/footnote text this color is actually used for.
+  textTertiary: palette.grey500,
   accent: palette.emerald600,
   accentStrong: palette.emerald700,
   onAccent: palette.white,
@@ -108,7 +111,8 @@ export const darkColors: ThemeColors = {
   border: palette.zinc700,
   textPrimary: palette.grey25,
   textSecondary: palette.grey400,
-  textTertiary: palette.grey500,
+  // Distinct from textSecondary while still ~5.9:1 against the dark background.
+  textTertiary: palette.grey450,
   accent: palette.emerald400,
   accentStrong: palette.white,
   onAccent: palette.emeraldDark,
