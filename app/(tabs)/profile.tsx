@@ -69,7 +69,16 @@ export default function ProfileScreen() {
 
         <View style={{ gap: theme.spacing.xs }}>
           <Card>
-            <ListRow title="Export my data" showChevron onPress={() => exportData.mutate()} />
+            <ListRow
+              title="Export my data"
+              showChevron
+              onPress={() =>
+                exportData.mutate(undefined, {
+                  onError: (err) =>
+                    Alert.alert('Could not export your data', err instanceof Error ? err.message : 'Please try again.'),
+                })
+              }
+            />
           </Card>
           <Card>
             <ListRow title="Privacy policy" showChevron onPress={() => router.push('/legal/privacy')} />

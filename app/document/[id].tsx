@@ -1,20 +1,37 @@
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, ScrollView, View } from 'react-native';
 
 import { Badge, Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateAsset } from '@/src/hooks/useAssets';
-import { useDocument, useUpdateDocument } from '@/src/hooks/useDocuments';
+import { useDocument, useRequestExtraction, useUpdateDocument } from '@/src/hooks/useDocuments';
 import { useSignedUrl } from '@/src/hooks/useSignedUrl';
 import { DOCUMENT_TYPES } from '@/src/lib/asset-categories';
 import type { DocumentRow, DocumentType } from '@/src/types/database';
+
+const STUCK_AFTER_MS = 20000;
 
 export default function DocumentReviewScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const { data: doc } = useDocument(id);
   const { data: imageUrl } = useSignedUrl('documents', doc?.file_path);
+  const requestExtraction = useRequestExtraction();
+  const [stuck, setStuck] = useState(false);
+  const [manualOverride, setManualOverride] = useState(false);
+
+  const isProcessing = doc?.extraction_status === 'pending' || doc?.extraction_status === 'processing';
+
+  useEffect(() => {
+    if (!isProcessing) {
+      setStuck(false);
+      return;
+    }
+    const timer = setTimeout(() => setStuck(true), STUCK_AFTER_MS);
+    return () => clearTimeout(timer);
+    // Restart the timer each time processing (re)starts, e.g. after "Try again".
+  }, [isProcessing, doc?.updated_at]);
 
   if (!doc) {
     return (
@@ -23,8 +40,6 @@ export default function DocumentReviewScreen() {
       </Screen>
     );
   }
-
-  const isProcessing = doc.extraction_status === 'pending' || doc.extraction_status === 'processing';
 
   return (
     <Screen edges={['bottom']}>
@@ -37,16 +52,36 @@ export default function DocumentReviewScreen() {
           />
         ) : null}
 
-        {isProcessing ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
-            <ActivityIndicator />
-            <Text variant="body" color="textSecondary">
-              Reading this photo…
-            </Text>
+        {isProcessing && !manualOverride ? (
+          <View style={{ gap: theme.spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
+              <ActivityIndicator />
+              <Text variant="body" color="textSecondary">
+                Reading this photo…
+              </Text>
+            </View>
+            {stuck ? (
+              <View style={{ gap: theme.spacing.xs }}>
+                <Text variant="footnote" color="textSecondary">
+                  This is taking longer than usual.
+                </Text>
+                <Button
+                  label="Try again"
+                  variant="secondary"
+                  onPress={() => {
+                    setStuck(false);
+                    requestExtraction.mutate(id);
+                  }}
+                  loading={requestExtraction.isPending}
+                />
+                <Button label="Enter details manually instead" variant="ghost" onPress={() => setManualOverride(true)} />
+              </View>
+            ) : null}
           </View>
         ) : (
-          // Only mounts once extraction has finished, so its form state
-          // initializes from `doc` exactly once with no effect needed.
+          // Only mounts once extraction has finished (or the user opts out
+          // of waiting), so its form state initializes from `doc` exactly
+          // once with no effect needed.
           <DocumentReviewForm id={id} doc={doc} />
         )}
       </ScrollView>
@@ -107,7 +142,14 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
   return (
     <View style={{ gap: theme.spacing.lg }}>
       {doc.extraction_status === 'failed' ? (
-        <Badge label="Automatic reading failed — fill in what you can" tone="warning" />
+        <View style={{ gap: theme.spacing.xxs }}>
+          <Badge label="Automatic reading failed — fill in what you can" tone="warning" />
+          {doc.extraction_error ? (
+            <Text variant="footnote" color="textSecondary">
+              {doc.extraction_error}
+            </Text>
+          ) : null}
+        </View>
       ) : (
         <Badge label="Check these details before saving" tone="accent" />
       )}

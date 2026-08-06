@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
+import { toEdgeFunctionError } from '@/src/lib/functionError';
 import { supabase } from '@/src/lib/supabase';
 import type { DocumentInsert, DocumentRow, DocumentUpdate } from '@/src/types/database';
 
@@ -105,12 +106,31 @@ export function useUpdateDocument() {
 
 /** Kicks off (or retries) AI extraction for a document that's already been uploaded. */
 export function useRequestExtraction() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (documentId: string) => {
       const { error } = await supabase.functions.invoke('extract-document', {
         body: { documentId },
       });
-      if (error) throw error;
+      if (error) throw await toEdgeFunctionError(error);
+    },
+    onError: async (error, documentId) => {
+      // The request never reached (or never finished on) the server, so
+      // extraction_status is still stuck at 'pending'/'processing' with
+      // nothing to ever move it on — mark it failed so the review screen
+      // can fall back to manual entry instead of spinning forever.
+      const { error: updateError } = await supabase
+        .from('documents')
+        .update({
+          extraction_status: 'failed',
+          extraction_error: error instanceof Error ? error.message : 'Could not read this photo.',
+        })
+        .eq('id', documentId)
+        .in('extraction_status', ['pending', 'processing']);
+      if (!updateError) {
+        queryClient.invalidateQueries({ queryKey: ['document', documentId] });
+      }
     },
   });
 }

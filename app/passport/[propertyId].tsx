@@ -1,7 +1,7 @@
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
 import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, useTheme } from '@/src/design-system';
 import { useHousehold } from '@/src/hooks/useProfile';
@@ -75,7 +75,17 @@ export default function PassportScreen() {
                       />
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Button label="Revoke" variant="danger" onPress={() => revoke.mutate(item.id)} loading={revoke.isPending} />
+                      <Button
+                        label="Revoke"
+                        variant="danger"
+                        onPress={() =>
+                          revoke.mutate(item.id, {
+                            onError: (err) =>
+                              Alert.alert('Could not revoke this link', err instanceof Error ? err.message : 'Please try again.'),
+                          })
+                        }
+                        loading={revoke.isPending}
+                      />
                     </View>
                   </View>
                 ) : null}

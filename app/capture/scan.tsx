@@ -64,8 +64,13 @@ export default function ScanScreen() {
         document_type: 'other',
       });
       // Extraction runs server-side; the review screen polls until it's
-      // done (see useDocument's refetchInterval), so this doesn't block.
-      requestExtraction.mutate(document.id);
+      // done (see useDocument's refetchInterval). Navigate immediately so
+      // the user sees the "Reading…" state, but still await the request —
+      // if the invoke call itself fails (network, function not deployed),
+      // useRequestExtraction's onError marks the document 'failed' so the
+      // review screen falls back to manual entry instead of spinning
+      // forever. Errors are intentionally swallowed here, not re-thrown.
+      requestExtraction.mutateAsync(document.id).catch(() => {});
       router.replace(`/document/${document.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not process that photo.');

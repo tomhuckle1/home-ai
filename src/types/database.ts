@@ -338,6 +338,14 @@ export type NotificationLogRow = {
   opened_at: string | null;
 }
 
+export type PushTokenRow = {
+  id: string;
+  user_id: string;
+  token: string;
+  created_at: string;
+}
+export type PushTokenInsert = Pick<PushTokenRow, 'user_id' | 'token'>;
+
 // supabase-js's generic query builder resolves embed/join call chains using a
 // `Relationships` array on every table; omitting it (even when we model no
 // relationships) makes some call chains silently collapse to `never`.
@@ -434,6 +442,11 @@ export type Database = {
         Row: NotificationLogRow;
         Insert: NotificationLogRow;
         Update: Partial<NotificationLogRow>;
+      } & NoRelationships;
+      push_tokens: {
+        Row: PushTokenRow;
+        Insert: PushTokenInsert;
+        Update: Partial<PushTokenInsert>;
       } & NoRelationships;
     };
   };

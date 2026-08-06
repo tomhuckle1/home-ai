@@ -1,6 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
+import { toEdgeFunctionError } from '@/src/lib/functionError';
 import { supabase } from '@/src/lib/supabase';
 import type { AiCitation } from '@/src/types/database';
 
@@ -20,7 +21,7 @@ export function useAskAi() {
   return useMutation({
     mutationFn: async (input: AskAiInput): Promise<AskAiResult> => {
       const { data, error } = await supabase.functions.invoke('ai-assistant', { body: input });
-      if (error) throw error;
+      if (error) throw await toEdgeFunctionError(error);
       return data as AskAiResult;
     },
     onSuccess: () => track(AnalyticsEvent.AiQuestionAsked),

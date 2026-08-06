@@ -40,6 +40,15 @@ environment, so it's listed rather than claimed.
 - [x] Sign in with Apple implemented (`expo-apple-authentication`) —
       required by Apple if any other third-party/social sign-in is
       offered; here it's offered alongside email/password.
+- [x] Push notification infrastructure for maintenance reminders —
+      `push_tokens` table, `send-maintenance-reminders` Edge Function
+      (unit-tested selection/dedup logic), and contextual client-side
+      registration (`src/lib/pushNotifications.ts`, asked the first time a
+      reminder is actually shown, not on launch, per the product plan's
+      T7 mitigation). This is the "reminders fire even if the user never
+      reopens the app" retention engine the plan calls for — previously
+      reminders only showed passively on the Home tab. **Two setup steps
+      below are still needed before it actually delivers a push.**
 
 ## Needs a human with store accounts (cannot be done from this environment)
 
@@ -82,6 +91,17 @@ environment, so it's listed rather than claimed.
 - [ ] Apple's Sign in with Apple entitlement/capability needs to be
       enabled on the App ID in the Apple Developer portal to match the
       `expo-apple-authentication` plugin already in `app.json`.
+- [ ] Run `eas init` to create an EAS project and get a project id — push
+      notifications need this (`Notifications.getExpoPushTokenAsync`
+      requires `extra.eas.projectId` in `app.json`, which doesn't exist
+      yet). Without it, `registerForPushNotificationsIfNeeded()` silently
+      no-ops rather than failing — the rest of the app is unaffected —
+      but no device will ever actually register a push token.
+- [ ] Schedule `send-maintenance-reminders` to run daily (Supabase
+      Dashboard → Edge Functions → your function → Cron, or a `pg_cron` +
+      `pg_net` job calling it) — the function itself is deployed like any
+      other Edge Function, but nothing invokes it on its own; it needs an
+      explicit schedule set up in the Supabase dashboard.
 
 ## Suggested order
 

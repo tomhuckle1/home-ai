@@ -2,9 +2,10 @@ import { router } from 'expo-router';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 
-import { Badge, EmptyState, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Badge, Button, EmptyState, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useAskAi } from '@/src/hooks/useAiAssistant';
 import { useProperties } from '@/src/hooks/useProperties';
+import { EdgeFunctionError } from '@/src/lib/functionError';
 import type { AiCitation } from '@/src/types/database';
 
 type ChatMessage = {
@@ -12,6 +13,7 @@ type ChatMessage = {
   role: 'user' | 'assistant';
   content: string;
   citations?: AiCitation[];
+  premiumRequired?: boolean;
 };
 
 const EXAMPLE_QUESTIONS = [
@@ -47,12 +49,18 @@ export default function AskAiScreen() {
         { id: `local-${Date.now()}-a`, role: 'assistant', content: result.answer, citations: result.citations },
       ]);
     } catch (err) {
+      const isPremiumRequired = err instanceof EdgeFunctionError && err.code === 'premium_required';
       setMessages((prev) => [
         ...prev,
         {
           id: `local-${Date.now()}-e`,
           role: 'assistant',
-          content: err instanceof Error ? `Something went wrong: ${err.message}` : 'Something went wrong.',
+          content: isPremiumRequired
+            ? 'The AI assistant is a Premium feature.'
+            : err instanceof Error
+              ? err.message
+              : 'Something went wrong. Please try again.',
+          premiumRequired: isPremiumRequired,
         },
       ]);
     } finally {
@@ -184,6 +192,24 @@ export default function AskAiScreen() {
 function ChatBubble({ message }: { message: ChatMessage }) {
   const theme = useTheme();
   const isUser = message.role === 'user';
+
+  if (message.premiumRequired) {
+    return (
+      <View style={{ alignItems: 'flex-start', gap: theme.spacing.xs, maxWidth: '90%' }}>
+        <View
+          style={{
+            backgroundColor: theme.colors.accentMuted,
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.sm,
+            gap: theme.spacing.xs,
+          }}
+        >
+          <Text variant="body">{message.content}</Text>
+          <Button label="Upgrade to Premium" size="md" fullWidth={false} onPress={() => router.push('/subscription/paywall')} />
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ alignItems: isUser ? 'flex-end' : 'flex-start', gap: theme.spacing.xxs }}>

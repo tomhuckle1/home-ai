@@ -1,11 +1,13 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
 import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, useTheme, type ThemeColors } from '@/src/design-system';
 import { useHomeHealthScore } from '@/src/hooks/useHealthScore';
 import { useCompleteMaintenanceTask, useUpcomingMaintenance } from '@/src/hooks/useMaintenance';
 import { useProfile } from '@/src/hooks/useProfile';
 import { useProperties } from '@/src/hooks/useProperties';
+import { registerForPushNotificationsIfNeeded } from '@/src/lib/pushNotifications';
 import type { PropertyRow } from '@/src/types/database';
 
 export default function HomeScreen() {
@@ -155,13 +157,22 @@ function UpcomingMaintenance({ propertyId }: { propertyId: string }) {
   const { data: tasks, isLoading } = useUpcomingMaintenance(propertyId);
   const completeTask = useCompleteMaintenanceTask();
 
-  if (isLoading) return null;
-
   const dueSoon = (tasks ?? []).filter((t) => {
     const daysUntilDue = (new Date(t.next_due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
     return daysUntilDue < 30;
   });
+  const hasDueSoon = dueSoon.length > 0;
 
+  // Contextual permission ask (T7): the first time the user actually sees
+  // a reminder, not on app launch — that's when a notification prompt
+  // makes sense to them.
+  useEffect(() => {
+    if (hasDueSoon) {
+      registerForPushNotificationsIfNeeded();
+    }
+  }, [hasDueSoon]);
+
+  if (isLoading) return null;
   if (dueSoon.length === 0) return null;
 
   return (
@@ -179,7 +190,15 @@ function UpcomingMaintenance({ propertyId }: { propertyId: string }) {
             <Button
               label="Mark done"
               variant="secondary"
-              onPress={() => completeTask.mutate({ taskId: task.id, propertyId })}
+              onPress={() =>
+                completeTask.mutate(
+                  { taskId: task.id, propertyId },
+                  {
+                    onError: (err) =>
+                      Alert.alert('Could not mark this done', err instanceof Error ? err.message : 'Please try again.'),
+                  },
+                )
+              }
               loading={completeTask.isPending}
             />
           </Card>

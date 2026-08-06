@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
 import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, useTheme } from '@/src/design-system';
 import { useAcceptInvite, useHouseholdMembers, usePendingInvitesForMe } from '@/src/hooks/useFamilySharing';
@@ -28,7 +28,12 @@ export default function FamilySharingScreen() {
                 <ListRow title="You've been invited to a home" subtitle="Join to see its full record" />
                 <Button
                   label="Accept"
-                  onPress={() => acceptInvite.mutate(invite.id)}
+                  onPress={() =>
+                    acceptInvite.mutate(invite.id, {
+                      onError: (err) =>
+                        Alert.alert('Could not accept invite', err instanceof Error ? err.message : 'Please try again.'),
+                    })
+                  }
                   loading={acceptInvite.isPending}
                 />
               </Card>

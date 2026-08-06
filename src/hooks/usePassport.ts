@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
 import { env } from '@/src/lib/env';
+import { toEdgeFunctionError } from '@/src/lib/functionError';
 import { supabase } from '@/src/lib/supabase';
 import type { PassportShareRow } from '@/src/types/database';
 
@@ -32,7 +33,7 @@ export function useGeneratePassport(propertyId: string | undefined) {
     mutationFn: async () => {
       if (!propertyId) throw new Error('No property to generate a passport for.');
       const { data, error } = await supabase.functions.invoke('generate-passport', { body: { propertyId } });
-      if (error) throw error;
+      if (error) throw await toEdgeFunctionError(error);
       return data as { token: string; expiresAt: string };
     },
     onSuccess: () => {

@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { useDocumentsByProperty } from '@/src/hooks/useDocuments';
 import { useCreateTimelineEvent } from '@/src/hooks/useTimeline';
 import type { TimelineEventType } from '@/src/types/database';
 
@@ -23,13 +24,23 @@ export default function NewTimelineEventScreen() {
   const { propertyId } = useLocalSearchParams<{ propertyId: string }>();
   const theme = useTheme();
   const createEvent = useCreateTimelineEvent();
+  const { data: documents } = useDocumentsByProperty(propertyId);
 
   const [eventType, setEventType] = useState<TimelineEventType>('other');
   const [title, setTitle] = useState('');
   const [eventDate, setEventDate] = useState(today());
   const [cost, setCost] = useState('');
   const [description, setDescription] = useState('');
+  const [relatedDocumentId, setRelatedDocumentId] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
+
+  // Documents that are still pending/processing/failed have no confirmed
+  // details worth referencing yet — only offer reviewed ones.
+  const linkableDocuments = (documents ?? []).filter((doc) => doc.extraction_status === 'completed');
+  const documentOptions = linkableDocuments.map((doc) => ({
+    value: doc.id,
+    label: doc.product_description || doc.original_filename || doc.document_type.replace(/_/g, ' '),
+  }));
 
   async function handleSave() {
     setError(null);
@@ -41,6 +52,7 @@ export default function NewTimelineEventScreen() {
         event_date: eventDate.trim(),
         cost: cost.trim() ? Number(cost) : null,
         description: description.trim() || null,
+        related_document_id: relatedDocumentId ?? null,
       });
       router.back();
     } catch (err) {
@@ -64,6 +76,15 @@ export default function NewTimelineEventScreen() {
           <TextField label="Cost (£, optional)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />
           <TextField label="Notes (optional)" value={description} onChangeText={setDescription} multiline />
         </View>
+
+        {documentOptions.length > 0 ? (
+          <View style={{ gap: theme.spacing.xs }}>
+            <Text variant="footnote" color="textSecondary">
+              Link a document (optional)
+            </Text>
+            <ChipSelect options={documentOptions} value={relatedDocumentId} onChange={setRelatedDocumentId} />
+          </View>
+        ) : null}
 
         {error ? (
           <Text variant="footnote" color="danger">
