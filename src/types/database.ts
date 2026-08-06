@@ -349,7 +349,16 @@ export type Database = {
     // fail its `extends GenericSchema` check and every query silently
     // degrades to `never`.
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      compute_home_health_score: {
+        Args: { _property_id: string };
+        Returns: { score: number; breakdown: Record<string, unknown> }[];
+      };
+      match_document_chunks: {
+        Args: { _property_id: string; _query_embedding: string; _match_count?: number };
+        Returns: { document_id: string; content: string; similarity: number }[];
+      };
+    };
     Tables: {
       profiles: { Row: ProfileRow; Insert: ProfileRow; Update: ProfileUpdate } & NoRelationships;
       households: { Row: HouseholdRow; Insert: HouseholdRow; Update: HouseholdUpdate } & NoRelationships;

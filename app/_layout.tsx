@@ -72,6 +72,10 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
         <Stack.Screen name="asset/[id]" options={{ headerShown: true, title: '' }} />
         <Stack.Screen name="capture/scan" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
         <Stack.Screen name="document/[id]" options={{ headerShown: true, title: 'Document' }} />
+        <Stack.Screen
+          name="timeline/new"
+          options={{ headerShown: true, title: 'Add to timeline', presentation: 'modal', headerLeft: closeButton }}
+        />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="(auth)" />
