@@ -86,6 +86,8 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
           options={{ headerShown: true, title: 'Invite family', presentation: 'modal', headerLeft: closeButton }}
         />
         <Stack.Screen name="passport/[propertyId]" options={{ headerShown: true, title: 'Home Passport' }} />
+        <Stack.Screen name="legal/privacy" options={{ headerShown: true, title: 'Privacy Policy' }} />
+        <Stack.Screen name="legal/terms" options={{ headerShown: true, title: 'Terms of Service' }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="(auth)" />
