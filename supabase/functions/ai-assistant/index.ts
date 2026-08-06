@@ -12,6 +12,7 @@ import {
   type DocumentContext,
   type RawAssistantResult,
   type RetrievedChunk,
+  type TimelineContext,
 } from './rag.ts';
 
 const CHAT_MODEL = Deno.env.get('OPENAI_CHAT_MODEL') ?? 'gpt-4o-mini';
@@ -72,7 +73,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const [assetsResult, documentsResult, apiKey] = await Promise.all([
+    const [assetsResult, documentsResult, timelineResult, apiKey] = await Promise.all([
       supabase
         .from('assets')
         .select('id, name, category, brand, model, serial_number, warranty_expiry, purchase_date, notes')
@@ -83,19 +84,26 @@ Deno.serve(async (req) => {
         .select('id, document_type, supplier, product_description, document_date, expiry_date, amount')
         .eq('property_id', propertyId)
         .limit(MAX_CONTEXT_ROWS),
+      supabase
+        .from('timeline_events')
+        .select('id, event_type, title, description, event_date, cost')
+        .eq('property_id', propertyId)
+        .limit(MAX_CONTEXT_ROWS),
       Promise.resolve(Deno.env.get('OPENAI_API_KEY')),
     ]);
 
     if (assetsResult.error) throw assetsResult.error;
     if (documentsResult.error) throw documentsResult.error;
+    if (timelineResult.error) throw timelineResult.error;
     if (!apiKey) throw new Error('OPENAI_API_KEY is not configured for this Supabase project');
 
     const assets = (assetsResult.data ?? []) as AssetContext[];
     const documents = (documentsResult.data ?? []) as DocumentContext[];
+    const timelineEvents = (timelineResult.data ?? []) as TimelineContext[];
 
     // If this property has no data at all, don't bother calling OpenAI —
     // the honest answer is fixed and free.
-    if (assets.length === 0 && documents.length === 0) {
+    if (assets.length === 0 && documents.length === 0 && timelineEvents.length === 0) {
       const answer =
         "I don't have any information recorded for this property yet — scan a document or add an item first.";
       const conversation = await ensureConversation(supabase, conversationId, propertyId, user.id, question);
@@ -119,7 +127,7 @@ Deno.serve(async (req) => {
     if (chunkError) throw chunkError;
     const chunks = (chunkRows ?? []) as RetrievedChunk[];
 
-    const requestBody = buildAssistantRequestBody(question, assets, documents, chunks, CHAT_MODEL);
+    const requestBody = buildAssistantRequestBody(question, assets, documents, timelineEvents, chunks, CHAT_MODEL);
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
@@ -143,7 +151,7 @@ Deno.serve(async (req) => {
     });
 
     const raw = JSON.parse(content) as RawAssistantResult;
-    const normalized = normalizeAssistantResult(raw, assets, documents);
+    const normalized = normalizeAssistantResult(raw, assets, documents, timelineEvents);
 
     const conversation = await ensureConversation(supabase, conversationId, propertyId, user.id, question);
     await saveTurn(supabase, conversation, question, normalized.answer, normalized.citations);

@@ -297,7 +297,7 @@ export type AiMessageInsert = Pick<AiMessageRow, 'conversation_id' | 'role' | 'c
   Partial<Pick<AiMessageRow, 'citations'>>;
 
 export type AiCitation = {
-  type: 'asset' | 'document';
+  type: 'asset' | 'document' | 'timeline_event';
   id: string;
   label: string;
 }

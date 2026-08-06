@@ -232,7 +232,11 @@ function ChatBubble({ message }: { message: ChatMessage }) {
             <Pressable
               key={`${citation.type}-${citation.id}`}
               accessibilityRole="button"
-              onPress={() => router.push(citation.type === 'asset' ? `/asset/${citation.id}` : `/document/${citation.id}`)}
+              onPress={() => {
+                if (citation.type === 'asset') router.push(`/asset/${citation.id}`);
+                else if (citation.type === 'document') router.push(`/document/${citation.id}`);
+                else router.push('/timeline');
+              }}
             >
               <Badge label={citation.label} tone="accent" />
             </Pressable>
