@@ -33,5 +33,10 @@ export function useSessionSync() {
 }
 
 export function useSession() {
-  return useSessionStore((state) => ({ session: state.session, status: state.status }));
+  // Two primitive selectors, not one selector returning a new object literal
+  // every call — the latter defeats useSyncExternalStore's snapshot caching
+  // and causes an infinite render loop ("getSnapshot should be cached").
+  const session = useSessionStore((state) => state.session);
+  const status = useSessionStore((state) => state.status);
+  return { session, status };
 }
