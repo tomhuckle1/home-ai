@@ -1,5 +1,5 @@
 import * as Crypto from 'expo-crypto';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 import { supabase } from './supabase';
@@ -34,10 +34,7 @@ export async function uploadPropertyImage(
   const prepared = await prepareImageForUpload(localUri);
   const path = `${propertyId}/${Crypto.randomUUID()}.jpg`;
 
-  const base64 = await FileSystem.readAsStringAsync(prepared.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
-  const bytes = base64ToUint8Array(base64);
+  const bytes = new Uint8Array(await new File(prepared.uri).arrayBuffer());
 
   const { error } = await supabase.storage.from(bucket).upload(path, bytes, {
     contentType: 'image/jpeg',
@@ -52,15 +49,4 @@ export async function getSignedUrl(bucket: StorageBucket, path: string, expiresI
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresInSeconds);
   if (error) throw error;
   return data.signedUrl;
-}
-
-// `atob` is provided globally by the `react-native-url-polyfill/auto` import
-// in ./supabase, which every caller of this module goes through first.
-function base64ToUint8Array(base64: string): Uint8Array {
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
-  }
-  return bytes;
 }
