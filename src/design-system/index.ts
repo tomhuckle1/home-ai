@@ -3,6 +3,7 @@ export * from './Button';
 export * from './Card';
 export * from './ChipSelect';
 export * from './EmptyState';
+export * from './HeaderCloseButton';
 export * from './ListRow';
 export * from './Screen';
 export * from './Text';

@@ -1,3 +1,4 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,6 +10,32 @@ import { useCreateDocumentDraft, useRequestExtraction } from '@/src/hooks/useDoc
 import { uploadPropertyImage } from '@/src/lib/storage';
 
 type CaptureMode = 'asset' | 'document';
+
+function CloseButton({ light = false }: { light?: boolean }) {
+  const theme = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel="Close"
+      onPress={() => router.back()}
+      hitSlop={12}
+      style={{
+        position: 'absolute',
+        top: theme.spacing.sm,
+        left: theme.spacing.md,
+        zIndex: 10,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: light ? 'rgba(17, 17, 19, 0.4)' : theme.colors.surfaceAlt,
+      }}
+    >
+      <Ionicons name="close" size={20} color={light ? '#FFFFFF' : theme.colors.textPrimary} />
+    </Pressable>
+  );
+}
 
 export default function ScanScreen() {
   const { propertyId, roomId, mode } = useLocalSearchParams<{
@@ -64,6 +91,7 @@ export default function ScanScreen() {
   if (!permission) {
     return (
       <Screen style={{ justifyContent: 'center' }}>
+        <CloseButton />
         <ActivityIndicator />
       </Screen>
     );
@@ -72,6 +100,7 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <Screen style={{ justifyContent: 'center', gap: theme.spacing.md }}>
+        <CloseButton />
         <Text variant="title2" style={{ textAlign: 'center' }}>
           Camera access needed
         </Text>
@@ -89,6 +118,7 @@ export default function ScanScreen() {
   return (
     <Screen padded={false} style={{ backgroundColor: theme.colors.textPrimary }}>
       <View style={{ flex: 1 }}>
+        <CloseButton light />
         <CameraView ref={cameraRef} style={{ flex: 1 }} facing="back" />
         <View
           style={{

@@ -20,7 +20,7 @@
     "android": {
       "package": "uk.co.homememory.app",
       "adaptiveIcon": {
-        "backgroundColor": "#F5F3EE",
+        "backgroundColor": "#FFFFFF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
@@ -44,7 +44,7 @@
         {
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F5F3EE"
+          "backgroundColor": "#FFFFFF"
         }
       ],
       [
@@ -63,7 +63,7 @@
         "expo-notifications",
         {
           "icon": "./assets/images/icon.png",
-          "color": "#2F6F4E"
+          "color": "#059669"
         }
       ],
       "expo-apple-authentication",

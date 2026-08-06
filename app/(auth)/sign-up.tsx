@@ -1,4 +1,4 @@
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -43,11 +43,18 @@ export default function SignUpScreen() {
   if (checkEmail) {
     return (
       <Screen edges={['top', 'bottom']}>
-        <View style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.xs }}>
-          <Text variant="title1">Check your email</Text>
-          <Text variant="body" color="textSecondary">
-            We&apos;ve sent a confirmation link to {email}. Follow it to finish creating your account.
-          </Text>
+        <View style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.lg }}>
+          <View style={{ gap: theme.spacing.xs }}>
+            <Text variant="title1">Check your email</Text>
+            <Text variant="body" color="textSecondary">
+              We&apos;ve sent a confirmation link to {email}. Follow it to finish creating your account.
+            </Text>
+          </View>
+          <Button
+            label="Back to sign in"
+            variant="secondary"
+            onPress={() => router.replace('/(auth)/sign-in')}
+          />
         </View>
       </Screen>
     );
