@@ -1,4 +1,4 @@
-import { buildOpenAiRequestBody, normalizeExtractionResult } from './extraction';
+import { buildEmbeddingInput, buildOpenAiRequestBody, normalizeExtractionResult } from './extraction';
 
 describe('normalizeExtractionResult', () => {
   it('passes through a fully well-formed result', () => {
@@ -60,6 +60,37 @@ describe('normalizeExtractionResult', () => {
     const result = normalizeExtractionResult({ supplier: '   ', brand: '' });
     expect(result.supplier).toBeNull();
     expect(result.brand).toBeNull();
+  });
+});
+
+describe('buildEmbeddingInput', () => {
+  it('includes every populated field, human-readable', () => {
+    const input = buildEmbeddingInput(
+      normalizeExtractionResult({
+        document_type: 'receipt',
+        brand: 'Bosch',
+        model: 'SMS4HVW33G',
+        product_description: 'Dishwasher',
+        supplier: 'Currys',
+        amount: 429.99,
+        currency: 'GBP',
+        document_date: '2024-03-15',
+        expiry_date: null,
+      }),
+    );
+
+    expect(input).toContain('Brand: Bosch');
+    expect(input).toContain('Model: SMS4HVW33G');
+    expect(input).toContain('Item: Dishwasher');
+    expect(input).toContain('Supplier: Currys');
+    expect(input).toContain('Amount: GBP 429.99');
+    expect(input).not.toContain('Expiry');
+  });
+
+  it('never produces an empty string, even with nothing extracted', () => {
+    const input = buildEmbeddingInput(normalizeExtractionResult({}));
+    expect(input.length).toBeGreaterThan(0);
+    expect(input).toContain('Document type: other');
   });
 });
 

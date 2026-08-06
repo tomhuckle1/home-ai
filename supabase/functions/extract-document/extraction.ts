@@ -127,6 +127,28 @@ export function normalizeExtractionResult(raw: RawExtractionResult): NormalizedE
   };
 }
 
+/**
+ * The text that gets embedded for semantic search (see
+ * supabase/migrations/20260806000006_document_chunk_search.sql). Kept
+ * separate from the raw extraction so the embedding reflects a clean,
+ * human-readable summary rather than null-heavy JSON.
+ */
+export function buildEmbeddingInput(normalized: NormalizedExtraction): string {
+  const lines = [
+    `Document type: ${normalized.document_type.replace(/_/g, ' ')}`,
+    normalized.product_description ? `Item: ${normalized.product_description}` : null,
+    normalized.brand ? `Brand: ${normalized.brand}` : null,
+    normalized.model ? `Model: ${normalized.model}` : null,
+    normalized.serial_number ? `Serial number: ${normalized.serial_number}` : null,
+    normalized.supplier ? `Supplier: ${normalized.supplier}` : null,
+    normalized.amount ? `Amount: ${normalized.currency ?? 'GBP'} ${normalized.amount}` : null,
+    normalized.document_date ? `Date: ${normalized.document_date}` : null,
+    normalized.expiry_date ? `Expiry/warranty date: ${normalized.expiry_date}` : null,
+  ].filter((line): line is string => !!line);
+
+  return lines.join('\n');
+}
+
 export function buildOpenAiRequestBody(imageUrl: string, model: string) {
   return {
     model,

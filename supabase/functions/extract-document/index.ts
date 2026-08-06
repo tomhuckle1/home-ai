@@ -4,7 +4,13 @@
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 import { corsHeaders } from '../_shared/cors.ts';
-import { buildOpenAiRequestBody, normalizeExtractionResult, type RawExtractionResult } from './extraction.ts';
+import { createEmbedding } from '../_shared/openai.ts';
+import {
+  buildEmbeddingInput,
+  buildOpenAiRequestBody,
+  normalizeExtractionResult,
+  type RawExtractionResult,
+} from './extraction.ts';
 
 const OPENAI_MODEL = Deno.env.get('OPENAI_VISION_MODEL') ?? 'gpt-4o-mini';
 const SIGNED_URL_TTL_SECONDS = 300;
@@ -37,7 +43,7 @@ Deno.serve(async (req) => {
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
-    .select('id, file_path')
+    .select('id, file_path, property_id')
     .eq('id', documentId)
     .single();
 
@@ -66,6 +72,22 @@ Deno.serve(async (req) => {
       })
       .eq('id', documentId);
     if (updateError) throw updateError;
+
+    // Best-effort: the document itself is already saved and reviewable even
+    // if embedding generation fails, so this doesn't roll back the update above.
+    try {
+      const apiKey = Deno.env.get('OPENAI_API_KEY')!;
+      const embedding = await createEmbedding(apiKey, buildEmbeddingInput(normalized));
+      await supabase.from('document_chunks').insert({
+        document_id: documentId,
+        property_id: document.property_id,
+        chunk_index: 0,
+        content: buildEmbeddingInput(normalized),
+        embedding,
+      });
+    } catch (embeddingError) {
+      console.error('Embedding generation failed for document', documentId, embeddingError);
+    }
 
     return jsonResponse({ success: true });
   } catch (error) {
