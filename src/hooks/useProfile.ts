@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/src/lib/supabase';
 import { useSession } from '@/src/hooks/useSession';
@@ -15,6 +15,23 @@ export function useProfile() {
       const { data, error } = await supabase.from('profiles').select('*').eq('id', userId!).single();
       if (error) throw error;
       return data;
+    },
+  });
+}
+
+export function useCompleteOnboarding() {
+  const { session } = useSession();
+  const userId = session?.user.id;
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      if (!userId) throw new Error('Not signed in');
+      const { error } = await supabase.from('profiles').update({ onboarded_at: new Date().toISOString() }).eq('id', userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', userId] });
     },
   });
 }

@@ -62,6 +62,7 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
     >
       <Stack.Protected guard={status === 'signedIn'}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen
           name="property/new"
           options={{ headerShown: true, title: 'Add property', presentation: 'modal', headerLeft: closeButton }}

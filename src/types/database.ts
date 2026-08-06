@@ -50,10 +50,11 @@ export type ProfileRow = {
   full_name: string | null;
   avatar_url: string | null;
   email: string | null;
+  onboarded_at: string | null;
   created_at: string;
   updated_at: string;
 }
-export type ProfileUpdate = Partial<Pick<ProfileRow, 'full_name' | 'avatar_url'>>;
+export type ProfileUpdate = Partial<Pick<ProfileRow, 'full_name' | 'avatar_url' | 'onboarded_at'>>;
 
 export type HouseholdRow = {
   id: string;

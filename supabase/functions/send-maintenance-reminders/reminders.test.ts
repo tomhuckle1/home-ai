@@ -1,4 +1,14 @@
-import { buildPushMessages, chunkMessages, selectTasksDueForReminder, type ReminderTask } from './reminders';
+import {
+  buildAssetExpiryMessages,
+  buildDocumentExpiryMessages,
+  buildPushMessages,
+  chunkMessages,
+  selectExpiringForReminder,
+  selectTasksDueForReminder,
+  type ExpiringAsset,
+  type ExpiringDocument,
+  type ReminderTask,
+} from './reminders';
 
 function task(overrides: Partial<ReminderTask> = {}): ReminderTask {
   return {
@@ -6,6 +16,26 @@ function task(overrides: Partial<ReminderTask> = {}): ReminderTask {
     property_id: 'property-1',
     title: 'Boiler service',
     next_due_date: '2026-08-10',
+    ...overrides,
+  };
+}
+
+function asset(overrides: Partial<ExpiringAsset> = {}): ExpiringAsset {
+  return {
+    id: 'asset-1',
+    property_id: 'property-1',
+    name: 'Washing machine',
+    warranty_expiry: '2026-08-10',
+    ...overrides,
+  };
+}
+
+function document(overrides: Partial<ExpiringDocument> = {}): ExpiringDocument {
+  return {
+    id: 'doc-1',
+    property_id: 'property-1',
+    title: 'Gas safety certificate',
+    expiry_date: '2026-08-10',
     ...overrides,
   };
 }
@@ -64,6 +94,86 @@ describe('buildPushMessages', () => {
   it('produces no messages for a task with no registered devices', () => {
     const messages = buildPushMessages([{ task: task(), tokens: [] }], '2026-08-06');
     expect(messages).toHaveLength(0);
+  });
+});
+
+describe('selectExpiringForReminder', () => {
+  it('includes an asset warranty expiring within the window', () => {
+    const result = selectExpiringForReminder(
+      [asset({ warranty_expiry: '2026-08-10' })],
+      (a) => a.warranty_expiry,
+      '2026-08-06',
+      new Set(),
+    );
+    expect(result).toHaveLength(1);
+  });
+
+  it('excludes an asset warranty expiring well outside the window', () => {
+    const result = selectExpiringForReminder(
+      [asset({ warranty_expiry: '2026-12-01' })],
+      (a) => a.warranty_expiry,
+      '2026-08-06',
+      new Set(),
+    );
+    expect(result).toHaveLength(0);
+  });
+
+  it('includes an already-expired warranty', () => {
+    const result = selectExpiringForReminder(
+      [asset({ warranty_expiry: '2026-01-01' })],
+      (a) => a.warranty_expiry,
+      '2026-08-06',
+      new Set(),
+    );
+    expect(result).toHaveLength(1);
+  });
+
+  it('excludes an item already notified today', () => {
+    const a = asset({ id: 'asset-2', warranty_expiry: '2026-08-06' });
+    const result = selectExpiringForReminder([a], (x) => x.warranty_expiry, '2026-08-06', new Set(['asset-2']));
+    expect(result).toHaveLength(0);
+  });
+
+  it('works the same way for documents (generic over the expiry field)', () => {
+    const result = selectExpiringForReminder(
+      [document({ expiry_date: '2026-08-08' })],
+      (d) => d.expiry_date,
+      '2026-08-06',
+      new Set(),
+    );
+    expect(result).toHaveLength(1);
+  });
+});
+
+describe('buildAssetExpiryMessages', () => {
+  it('builds one message per recipient token', () => {
+    const messages = buildAssetExpiryMessages([{ asset: asset(), tokens: ['tokenA', 'tokenB'] }], '2026-08-06');
+    expect(messages).toHaveLength(2);
+    expect(messages[0].data).toMatchObject({ assetId: 'asset-1', propertyId: 'property-1' });
+  });
+
+  it('labels an expired warranty distinctly from one expiring soon', () => {
+    const expired = buildAssetExpiryMessages([{ asset: asset({ warranty_expiry: '2026-08-01' }), tokens: ['t'] }], '2026-08-06');
+    expect(expired[0].title).toBe('Warranty expired');
+    const upcoming = buildAssetExpiryMessages([{ asset: asset({ warranty_expiry: '2026-08-10' }), tokens: ['t'] }], '2026-08-06');
+    expect(upcoming[0].title).toBe('Warranty expiring soon');
+  });
+});
+
+describe('buildDocumentExpiryMessages', () => {
+  it('builds one message per recipient token', () => {
+    const messages = buildDocumentExpiryMessages(
+      [{ document: document(), tokens: ['tokenA'] }],
+      '2026-08-06',
+    );
+    expect(messages).toHaveLength(1);
+    expect(messages[0].data).toMatchObject({ documentId: 'doc-1', propertyId: 'property-1' });
+    expect(messages[0].body).toContain('Gas safety certificate');
+  });
+
+  it('labels an expired document distinctly from one expiring soon', () => {
+    const expired = buildDocumentExpiryMessages([{ document: document({ expiry_date: '2026-08-01' }), tokens: ['t'] }], '2026-08-06');
+    expect(expired[0].title).toBe('Document expired');
   });
 });
 

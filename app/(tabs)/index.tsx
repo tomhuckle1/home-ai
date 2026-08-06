@@ -18,6 +18,15 @@ export default function HomeScreen() {
 
   const firstName = profile?.full_name?.split(' ')[0];
 
+  useEffect(() => {
+    // Only ever redirects a genuinely new account (no onboarded_at AND no
+    // properties yet) — existing accounts predate the onboarded_at column
+    // and would otherwise all read as "not onboarded" too.
+    if (profile && !profile.onboarded_at && properties && properties.length === 0) {
+      router.replace('/onboarding');
+    }
+  }, [profile, properties]);
+
   return (
     <Screen edges={['top']}>
       <View
