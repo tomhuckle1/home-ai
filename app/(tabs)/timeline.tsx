@@ -4,19 +4,8 @@ import { ActivityIndicator, SectionList, View } from 'react-native';
 import { Button, Card, EmptyState, ListRow, Screen, Text, useTheme } from '@/src/design-system';
 import { useProperties } from '@/src/hooks/useProperties';
 import { useTimeline } from '@/src/hooks/useTimeline';
-import type { TimelineEventRow, TimelineEventType } from '@/src/types/database';
-
-const EVENT_ICON: Record<TimelineEventType, string> = {
-  purchase: '🏡',
-  sale: '💰',
-  renovation: '🔨',
-  repair: '🔧',
-  maintenance_completed: '✅',
-  document_added: '📄',
-  asset_added: '📦',
-  insurance_renewed: '🛡️',
-  other: '📌',
-};
+import { TIMELINE_EVENT_ICON } from '@/src/lib/timeline-icons';
+import type { TimelineEventRow } from '@/src/types/database';
 
 function yearOf(dateStr: string) {
   return dateStr.slice(0, 4);
@@ -97,19 +86,13 @@ export default function TimelineScreen() {
         renderItem={({ item }) => (
           <Card style={{ marginBottom: theme.spacing.sm }}>
             <ListRow
-              leading={<Text style={{ fontSize: 20 }}>{EVENT_ICON[item.event_type]}</Text>}
+              leading={<Text style={{ fontSize: 20 }}>{TIMELINE_EVENT_ICON[item.event_type]}</Text>}
               title={item.title}
               subtitle={
                 [item.event_date, item.cost ? `£${item.cost}` : null].filter(Boolean).join(' · ') || undefined
               }
-              onPress={
-                item.related_asset_id
-                  ? () => router.push(`/asset/${item.related_asset_id}`)
-                  : item.related_document_id
-                    ? () => router.push(`/document/${item.related_document_id}`)
-                    : undefined
-              }
-              showChevron={!!(item.related_asset_id || item.related_document_id)}
+              onPress={() => router.push(`/timeline/${item.id}`)}
+              showChevron
             />
           </Card>
         )}

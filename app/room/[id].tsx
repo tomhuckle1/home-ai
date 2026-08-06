@@ -1,15 +1,38 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
 import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, useTheme } from '@/src/design-system';
 import { useAssetsByRoom } from '@/src/hooks/useAssets';
-import { useRoom } from '@/src/hooks/useRooms';
+import { useDeleteRoom, useRoom } from '@/src/hooks/useRooms';
+import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 
 export default function RoomDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
   const { data: room } = useRoom(id);
   const { data: assets, isLoading } = useAssetsByRoom(id);
+  const deleteRoom = useDeleteRoom();
+
+  function handleDelete() {
+    if (!room) return;
+    Alert.alert(`Delete "${room.name}"?`, 'This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteRoom.mutate(
+            { id: room.id, property_id: room.property_id },
+            {
+              onSuccess: () => router.back(),
+              onError: (err) =>
+                Alert.alert('Could not delete this room', err instanceof Error ? err.message : 'Please try again.'),
+            },
+          );
+        },
+      },
+    ]);
+  }
 
   return (
     <Screen edges={['bottom']}>
@@ -65,6 +88,19 @@ export default function RoomDetailScreen() {
               />
             </Card>
           )}
+          ListFooterComponent={
+            room ? (
+              <View style={{ marginTop: theme.spacing.lg }}>
+                {isWithinDeleteWindow(room.created_at) ? (
+                  <Button label="Delete room" variant="danger" onPress={handleDelete} loading={deleteRoom.isPending} />
+                ) : (
+                  <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>
+                    This can no longer be deleted — it&apos;s past the 30-minute window for undoing a mistake.
+                  </Text>
+                )}
+              </View>
+            ) : null
+          }
         />
       )}
     </Screen>

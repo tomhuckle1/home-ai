@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
-import { Badge, Card, EmptyState, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useAllDocuments } from '@/src/hooks/useDocuments';
 import { useProperties } from '@/src/hooks/useProperties';
-import type { DocumentRow, ExtractionStatus } from '@/src/types/database';
+import type { DocumentRow, ExtractionStatus, PropertyRow } from '@/src/types/database';
 
 function statusBadge(status: ExtractionStatus) {
   switch (status) {
@@ -16,6 +16,20 @@ function statusBadge(status: ExtractionStatus) {
     default:
       return <Badge label="Reading…" tone="neutral" />;
   }
+}
+
+function startScan(properties: PropertyRow[]) {
+  if (properties.length === 1) {
+    router.push({ pathname: '/capture/scan', params: { propertyId: properties[0].id, mode: 'document' } });
+    return;
+  }
+  Alert.alert('Scan for which property?', undefined, [
+    ...properties.map((property) => ({
+      text: property.address_line1,
+      onPress: () => router.push({ pathname: '/capture/scan', params: { propertyId: property.id, mode: 'document' } }),
+    })),
+    { text: 'Cancel', style: 'cancel' as const },
+  ]);
 }
 
 export default function DocumentsScreen() {
@@ -38,8 +52,20 @@ export default function DocumentsScreen() {
 
   return (
     <Screen edges={['top']}>
-      <View style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.sm }}>
+      <View
+        style={{
+          paddingVertical: theme.spacing.md,
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}
+      >
         <Text variant="largeTitle">Documents</Text>
+        {properties && properties.length > 0 ? (
+          <Button label="Scan" variant="ghost" fullWidth={false} onPress={() => startScan(properties)} />
+        ) : null}
+      </View>
+      <View style={{ paddingBottom: theme.spacing.sm }}>
         <TextField
           placeholder="Search by supplier, brand, product…"
           value={search}
@@ -60,10 +86,10 @@ export default function DocumentsScreen() {
               icon="📄"
               title={search ? 'No matches' : 'No documents yet'}
               description={
-                search
-                  ? 'Try a different search term.'
-                  : 'Scan a receipt, manual, warranty or certificate from a property page to get started.'
+                search ? 'Try a different search term.' : 'Scan a receipt, manual, warranty or certificate to get started.'
               }
+              actionLabel={!search && properties && properties.length > 0 ? 'Scan a document' : undefined}
+              onAction={!search && properties && properties.length > 0 ? () => startScan(properties) : undefined}
             />
           }
           renderItem={({ item }: { item: DocumentRow }) => (

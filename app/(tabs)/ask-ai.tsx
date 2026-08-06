@@ -231,7 +231,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
               onPress={() => {
                 if (citation.type === 'asset') router.push(`/asset/${citation.id}`);
                 else if (citation.type === 'document') router.push(`/document/${citation.id}`);
-                else router.push('/timeline');
+                else router.push(`/timeline/${citation.id}`);
               }}
             >
               <Badge label={citation.label} tone="accent" />

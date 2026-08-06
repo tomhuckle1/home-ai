@@ -8,6 +8,7 @@ import { useCreateAsset } from '@/src/hooks/useAssets';
 import { useDeleteDocument, useDocument, useRequestExtraction, useUpdateDocument } from '@/src/hooks/useDocuments';
 import { useSignedUrl } from '@/src/hooks/useSignedUrl';
 import { DOCUMENT_TYPES } from '@/src/lib/asset-categories';
+import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 import type { DocumentRow, DocumentType } from '@/src/types/database';
 
 const STUCK_AFTER_MS = 20000;
@@ -217,7 +218,13 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         </Text>
       ) : null}
 
-      <Button label="Delete document" variant="danger" onPress={handleDelete} loading={deleteDocument.isPending} />
+      {isWithinDeleteWindow(doc.created_at) ? (
+        <Button label="Delete document" variant="danger" onPress={handleDelete} loading={deleteDocument.isPending} />
+      ) : (
+        <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>
+          This can no longer be deleted — it&apos;s past the 30-minute window for undoing a mistake.
+        </Text>
+      )}
     </View>
   );
 }

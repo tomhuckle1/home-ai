@@ -3,6 +3,7 @@ import { Alert, ScrollView, View } from 'react-native';
 
 import { Badge, Button, Card, Screen, Text, useTheme } from '@/src/design-system';
 import { useAsset, useDeleteAsset } from '@/src/hooks/useAssets';
+import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 
 function Field({ label, value }: { label: string; value?: string | null }) {
   if (!value) return null;
@@ -77,7 +78,13 @@ export default function AssetDetailScreen() {
           </View>
         </Card>
 
-        <Button label="Delete item" variant="danger" onPress={handleDelete} loading={deleteAsset.isPending} />
+        {isWithinDeleteWindow(asset.created_at) ? (
+          <Button label="Delete item" variant="danger" onPress={handleDelete} loading={deleteAsset.isPending} />
+        ) : (
+          <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>
+            This can no longer be deleted — it&apos;s past the 30-minute window for undoing a mistake.
+          </Text>
+        )}
       </ScrollView>
     </Screen>
   );

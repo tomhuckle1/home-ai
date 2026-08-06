@@ -83,6 +83,7 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
           name="timeline/new"
           options={{ headerShown: true, title: 'Add to timeline', presentation: 'modal', headerLeft: closeButton }}
         />
+        <Stack.Screen name="timeline/[id]" options={{ headerShown: true, title: 'Event' }} />
         <Stack.Screen
           name="subscription/paywall"
           options={{ headerShown: true, title: 'Premium', presentation: 'modal', headerLeft: closeButton }}

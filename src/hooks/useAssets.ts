@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
+import { DELETE_WINDOW_MESSAGE } from '@/src/lib/deleteWindow';
 import { supabase } from '@/src/lib/supabase';
 import type { AssetInsert, AssetRow } from '@/src/types/database';
 
@@ -47,8 +48,9 @@ export function useDeleteAsset() {
       // exist and reference the same object, so deleting it here could break
       // that document's photo. The document's own delete flow owns cleanup
       // of that storage object.
-      const { error } = await supabase.from('assets').delete().eq('id', asset.id);
+      const { data, error } = await supabase.from('assets').delete().eq('id', asset.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(DELETE_WINDOW_MESSAGE);
       return asset;
     },
     onSuccess: (asset) => {
