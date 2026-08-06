@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { useEffect } from 'react';
 import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
-import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, useTheme, type ThemeColors } from '@/src/design-system';
+import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, Thumbnail, useTheme, type ThemeColors } from '@/src/design-system';
 import { useHomeHealthScore } from '@/src/hooks/useHealthScore';
 import { useCompleteMaintenanceTask, useUpcomingMaintenance } from '@/src/hooks/useMaintenance';
 import { useProfile } from '@/src/hooks/useProfile';
@@ -73,6 +73,13 @@ export default function HomeScreen() {
           renderItem={({ item }: { item: PropertyRow }) => (
             <Card>
               <ListRow
+                leading={
+                  item.cover_photo_path ? (
+                    <Thumbnail bucket="property-photos" path={item.cover_photo_path} />
+                  ) : (
+                    <Text style={{ fontSize: 24, lineHeight: 28 }}>🏠</Text>
+                  )
+                }
                 title={item.address_line1}
                 subtitle={[item.city, item.postcode].filter(Boolean).join(', ') || undefined}
                 showChevron

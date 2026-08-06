@@ -1,8 +1,10 @@
+import { Image } from 'expo-image';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, ScrollView, View } from 'react-native';
 
 import { Badge, Button, Card, Screen, Text, useTheme } from '@/src/design-system';
 import { useAsset, useDeleteAsset } from '@/src/hooks/useAssets';
+import { useSignedUrl } from '@/src/hooks/useSignedUrl';
 import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 
 function Field({ label, value }: { label: string; value?: string | null }) {
@@ -22,6 +24,7 @@ export default function AssetDetailScreen() {
   const theme = useTheme();
   const { data: asset } = useAsset(id);
   const deleteAsset = useDeleteAsset();
+  const { data: imageUrl } = useSignedUrl('documents', asset?.primary_photo_path);
 
   if (!asset) return null;
 
@@ -55,6 +58,14 @@ export default function AssetDetailScreen() {
   return (
     <Screen edges={['bottom']}>
       <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
+        {imageUrl ? (
+          <Image
+            source={{ uri: imageUrl }}
+            style={{ width: '100%', aspectRatio: 4 / 3, borderRadius: theme.radius.lg }}
+            contentFit="cover"
+          />
+        ) : null}
+
         <View style={{ gap: theme.spacing.xxs }}>
           <Text variant="title1">{asset.name}</Text>
           {asset.warranty_expiry ? (

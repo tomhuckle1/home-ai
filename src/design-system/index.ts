@@ -9,5 +9,6 @@ export * from './RootErrorBoundary';
 export * from './Screen';
 export * from './Text';
 export * from './TextField';
+export * from './Thumbnail';
 export * from './theme';
 export * from './tokens';

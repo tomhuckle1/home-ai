@@ -1,7 +1,7 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
 
-import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, useTheme } from '@/src/design-system';
+import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, Thumbnail, useTheme } from '@/src/design-system';
 import { useAssetsByRoom } from '@/src/hooks/useAssets';
 import { useDeleteRoom, useRoom } from '@/src/hooks/useRooms';
 import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
@@ -80,6 +80,13 @@ export default function RoomDetailScreen() {
           renderItem={({ item }) => (
             <Card>
               <ListRow
+                leading={
+                  item.primary_photo_path ? (
+                    <Thumbnail bucket="documents" path={item.primary_photo_path} />
+                  ) : (
+                    <Text style={{ fontSize: 24, lineHeight: 28 }}>📦</Text>
+                  )
+                }
                 title={item.name}
                 subtitle={[item.brand, item.model].filter(Boolean).join(' · ') || undefined}
                 trailing={item.warranty_expiry ? <Badge label="Under warranty" tone="accent" /> : undefined}
