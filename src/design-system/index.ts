@@ -1,6 +1,7 @@
 export * from './Badge';
 export * from './Button';
 export * from './Card';
+export * from './ChipSelect';
 export * from './EmptyState';
 export * from './ListRow';
 export * from './Screen';

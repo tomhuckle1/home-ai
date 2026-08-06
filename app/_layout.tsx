@@ -33,6 +33,26 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Protected guard={status === 'signedIn'}>
               <Stack.Screen name="(tabs)" />
+              <Stack.Screen
+                name="property/new"
+                options={{ headerShown: true, title: 'Add property', presentation: 'modal' }}
+              />
+              <Stack.Screen name="property/[id]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen
+                name="room/new"
+                options={{ headerShown: true, title: 'Add room', presentation: 'modal' }}
+              />
+              <Stack.Screen name="room/[id]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen
+                name="asset/new"
+                options={{ headerShown: true, title: 'Add item', presentation: 'modal' }}
+              />
+              <Stack.Screen name="asset/[id]" options={{ headerShown: true, title: '' }} />
+              <Stack.Screen
+                name="capture/scan"
+                options={{ headerShown: true, title: 'Scan', presentation: 'fullScreenModal' }}
+              />
+              <Stack.Screen name="document/[id]" options={{ headerShown: true, title: 'Document' }} />
             </Stack.Protected>
             <Stack.Protected guard={status === 'signedOut'}>
               <Stack.Screen name="(auth)" />
