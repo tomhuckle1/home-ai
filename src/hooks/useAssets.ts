@@ -36,6 +36,31 @@ export function useAsset(assetId: string | undefined) {
   });
 }
 
+export function useDeleteAsset() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (asset: Pick<AssetRow, 'id' | 'room_id'>) => {
+      // Deliberately not removing storage here: an asset's primary_photo_path
+      // is always a copy of the source document's file_path (see
+      // handleSaveAsItem in app/document/[id].tsx) — that document may still
+      // exist and reference the same object, so deleting it here could break
+      // that document's photo. The document's own delete flow owns cleanup
+      // of that storage object.
+      const { error } = await supabase.from('assets').delete().eq('id', asset.id);
+      if (error) throw error;
+      return asset;
+    },
+    onSuccess: (asset) => {
+      queryClient.removeQueries({ queryKey: ['asset', asset.id] });
+      queryClient.invalidateQueries({ queryKey: assetsQueryKey(asset.room_id ?? undefined) });
+      // Deleting an asset may have unlinked a timeline/maintenance entry.
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
+      queryClient.invalidateQueries({ queryKey: ['maintenance'] });
+    },
+  });
+}
+
 export function useCreateAsset() {
   const queryClient = useQueryClient();
 

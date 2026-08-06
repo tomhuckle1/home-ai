@@ -50,3 +50,14 @@ export async function getSignedUrl(bucket: StorageBucket, path: string, expiresI
   if (error) throw error;
   return data.signedUrl;
 }
+
+/**
+ * Best-effort: a failure here shouldn't block deleting the database row
+ * that references it — an orphaned storage object costs pennies, a row
+ * the user can't delete because of a storage hiccup is a worse failure.
+ */
+export async function removeStorageFile(bucket: StorageBucket, path: string | null | undefined) {
+  if (!path) return;
+  const { error } = await supabase.storage.from(bucket).remove([path]);
+  if (error) console.warn(`Failed to remove ${bucket}/${path}:`, error.message);
+}

@@ -5,6 +5,7 @@ import { View } from 'react-native';
 import { Button, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useInviteFamilyMember } from '@/src/hooks/useFamilySharing';
 import { useHousehold } from '@/src/hooks/useProfile';
+import { friendlyMessage } from '@/src/lib/postgrestError';
 
 export default function InviteFamilyScreen() {
   const theme = useTheme();
@@ -19,7 +20,7 @@ export default function InviteFamilyScreen() {
       await invite.mutateAsync(email);
       router.back();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not send this invite.');
+      setError(friendlyMessage(err, 'Could not send this invite.'));
     }
   }
 

@@ -119,9 +119,10 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
 
   const tone = scoreTone(data.score);
   const breakdown = data.breakdown as Record<string, number>;
+  const tip = healthScoreTip(breakdown);
 
   return (
-    <Card>
+    <Card onPress={() => router.push(`/property/${propertyId}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
         <View
           style={{
@@ -148,8 +149,30 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
           </Text>
         </View>
       </View>
+      {tip ? (
+        <Text variant="footnote" color="accentStrong" style={{ marginTop: theme.spacing.xs }}>
+          {tip}
+        </Text>
+      ) : null}
     </Card>
   );
+}
+
+/** The single highest-impact next step, in the same priority order the score itself weighs them. */
+function healthScoreTip(breakdown: Record<string, number>): string | null {
+  if (breakdown.overdue_maintenance > 0) {
+    return 'Mark overdue maintenance done, or reschedule it, to bring your score back up.';
+  }
+  if (breakdown.expired_warranties > 0) {
+    return 'Check those expired warranties — replace the item on file or note a new one.';
+  }
+  if (breakdown.documents_recorded < 5) {
+    return 'Scan a few more receipts, manuals or certificates to boost your score.';
+  }
+  if (breakdown.assets_recorded < 3) {
+    return 'Add a few more items to your rooms to boost your score.';
+  }
+  return null;
 }
 
 function UpcomingMaintenance({ propertyId }: { propertyId: string }) {

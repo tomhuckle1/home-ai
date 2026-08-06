@@ -7,6 +7,7 @@ import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { Button, Screen, Text, useTheme } from '@/src/design-system';
 import { useCreateDocumentDraft, useRequestExtraction } from '@/src/hooks/useDocuments';
+import { friendlyMessage } from '@/src/lib/postgrestError';
 import { uploadPropertyImage } from '@/src/lib/storage';
 
 type CaptureMode = 'asset' | 'document';
@@ -73,7 +74,7 @@ export default function ScanScreen() {
       requestExtraction.mutateAsync(document.id).catch(() => {});
       router.replace(`/document/${document.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not process that photo.');
+      setError(friendlyMessage(err, 'Could not process that photo.'));
       setProcessing(false);
     }
   }

@@ -5,6 +5,7 @@ import { ScrollView, View } from 'react-native';
 import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useHousehold } from '@/src/hooks/useProfile';
 import { useCreateProperty } from '@/src/hooks/useProperty';
+import { friendlyMessage } from '@/src/lib/postgrestError';
 import type { PropertyType } from '@/src/types/database';
 
 const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
@@ -40,7 +41,7 @@ export default function NewPropertyScreen() {
       });
       router.replace(`/property/${property.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save this property.');
+      setError(friendlyMessage(err, 'Could not save this property.'));
     }
   }
 

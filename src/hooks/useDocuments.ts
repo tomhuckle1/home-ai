@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
 import { toEdgeFunctionError } from '@/src/lib/functionError';
+import { removeStorageFile } from '@/src/lib/storage';
 import { supabase } from '@/src/lib/supabase';
 import type { DocumentInsert, DocumentRow, DocumentUpdate } from '@/src/types/database';
 
@@ -100,6 +101,26 @@ export function useUpdateDocument() {
       if (document.extraction_status === 'completed') {
         track(AnalyticsEvent.ExtractionConfirmed, { document_id: document.id });
       }
+    },
+  });
+}
+
+export function useDeleteDocument() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (document: Pick<DocumentRow, 'id' | 'property_id' | 'file_path'>) => {
+      await removeStorageFile('documents', document.file_path);
+      const { error } = await supabase.from('documents').delete().eq('id', document.id);
+      if (error) throw error;
+      return document;
+    },
+    onSuccess: (document) => {
+      queryClient.removeQueries({ queryKey: ['document', document.id] });
+      queryClient.invalidateQueries({ queryKey: documentsByPropertyQueryKey(document.property_id) });
+      queryClient.invalidateQueries({ queryKey: ['documents', 'all'] });
+      // Deleting a document may have unlinked a timeline entry (related_document_id -> null).
+      queryClient.invalidateQueries({ queryKey: ['timeline'] });
     },
   });
 }

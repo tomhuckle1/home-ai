@@ -53,6 +53,11 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
         headerTintColor: theme.colors.textPrimary,
         headerTitleStyle: { color: theme.colors.textPrimary, fontSize: 17, fontWeight: '600' },
         contentStyle: { backgroundColor: theme.colors.background },
+        // Without this, the native back button falls back to the PREVIOUS
+        // screen's route name when that screen has no title set — e.g.
+        // the (tabs) group, which has none, so the back button literally
+        // read "(tabs)". Minimal mode shows just the chevron everywhere.
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Protected guard={status === 'signedIn'}>

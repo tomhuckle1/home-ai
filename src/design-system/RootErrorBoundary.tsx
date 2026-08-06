@@ -34,7 +34,7 @@ export function RootErrorBoundary({ error, retry }: ErrorBoundaryProps) {
         backgroundColor: theme.colors.background,
       }}
     >
-      <Text style={{ fontSize: 40 }}>⚠️</Text>
+      <Text style={{ fontSize: 40, lineHeight: 48 }}>⚠️</Text>
       <Text variant="title2" style={{ textAlign: 'center' }}>
         Something went wrong
       </Text>

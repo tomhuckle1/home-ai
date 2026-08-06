@@ -1,11 +1,11 @@
 import { Image } from 'expo-image';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 
 import { Badge, Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateAsset } from '@/src/hooks/useAssets';
-import { useDocument, useRequestExtraction, useUpdateDocument } from '@/src/hooks/useDocuments';
+import { useDeleteDocument, useDocument, useRequestExtraction, useUpdateDocument } from '@/src/hooks/useDocuments';
 import { useSignedUrl } from '@/src/hooks/useSignedUrl';
 import { DOCUMENT_TYPES } from '@/src/lib/asset-categories';
 import type { DocumentRow, DocumentType } from '@/src/types/database';
@@ -93,6 +93,7 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
   const theme = useTheme();
   const updateDocument = useUpdateDocument();
   const createAsset = useCreateAsset();
+  const deleteDocument = useDeleteDocument();
 
   const [documentType, setDocumentType] = useState<DocumentType>(doc.document_type);
   const [supplier, setSupplier] = useState(doc.supplier ?? '');
@@ -122,6 +123,26 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         extraction_status: 'completed',
       },
     });
+  }
+
+  function handleDelete() {
+    Alert.alert('Delete this document?', 'This removes it and its photo permanently. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: () => {
+          deleteDocument.mutate(
+            { id: doc.id, property_id: doc.property_id, file_path: doc.file_path },
+            {
+              onSuccess: () => router.back(),
+              onError: (err) =>
+                Alert.alert('Could not delete this document', err instanceof Error ? err.message : 'Please try again.'),
+            },
+          );
+        },
+      },
+    ]);
   }
 
   async function handleSaveAsItem() {
@@ -195,6 +216,8 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
           Saved as an item in this room.
         </Text>
       ) : null}
+
+      <Button label="Delete document" variant="danger" onPress={handleDelete} loading={deleteDocument.isPending} />
     </View>
   );
 }

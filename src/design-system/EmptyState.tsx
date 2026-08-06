@@ -25,7 +25,10 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
       }}
     >
       {icon ? (
-        <Text style={{ fontSize: 40, marginBottom: theme.spacing.xs }}>{icon}</Text>
+        // lineHeight must be set explicitly alongside fontSize — Text's
+        // "body" variant bakes in lineHeight:22, which clips a 40px emoji
+        // top and bottom if left unoverridden.
+        <Text style={{ fontSize: 40, lineHeight: 48, marginBottom: theme.spacing.xs }}>{icon}</Text>
       ) : null}
       <Text variant="title2" style={{ textAlign: 'center' }}>
         {title}
