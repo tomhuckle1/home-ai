@@ -375,6 +375,10 @@ export type Database = {
         Args: { _household_id: string };
         Returns: boolean;
       };
+      has_used_free_ai_question: {
+        Args: { _household_id: string };
+        Returns: boolean;
+      };
     };
     Tables: {
       profiles: { Row: ProfileRow; Insert: ProfileRow; Update: ProfileUpdate } & NoRelationships;

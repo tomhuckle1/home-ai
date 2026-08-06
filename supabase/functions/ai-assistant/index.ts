@@ -54,7 +54,9 @@ Deno.serve(async (req) => {
   } = await supabase.auth.getUser();
   if (!user) return jsonResponse({ error: 'Not authenticated' }, 401);
 
-  // AI assistant is a Premium feature (see supabase/migrations/20260806000008_entitlements.sql).
+  // AI assistant is a Premium feature (see supabase/migrations/20260806000008_entitlements.sql),
+  // with one exception: free households get exactly one question, ever,
+  // as a taste of it (see migration 20260806000012_free_ai_question.sql).
   // Checked here, not just hidden in the UI — the same principle as the
   // DB-level limits on properties/documents/family sharing.
   const { data: property, error: propertyError } = await supabase
@@ -69,7 +71,19 @@ Deno.serve(async (req) => {
   });
   if (premiumError) return jsonResponse({ error: premiumError.message }, 500);
   if (!isPremium) {
-    return jsonResponse({ error: 'premium_required', message: 'The AI assistant is a Premium feature.' }, 402);
+    const { data: hasUsedFreeQuestion, error: freeQuestionError } = await supabase.rpc('has_used_free_ai_question', {
+      _household_id: property.household_id,
+    });
+    if (freeQuestionError) return jsonResponse({ error: freeQuestionError.message }, 500);
+    if (hasUsedFreeQuestion) {
+      return jsonResponse(
+        {
+          error: 'premium_required',
+          message: "You've used your free AI question — upgrade to Premium for unlimited questions.",
+        },
+        402,
+      );
+    }
   }
 
   try {

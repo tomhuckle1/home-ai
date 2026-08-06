@@ -55,11 +55,7 @@ export default function AskAiScreen() {
         {
           id: `local-${Date.now()}-e`,
           role: 'assistant',
-          content: isPremiumRequired
-            ? 'The AI assistant is a Premium feature.'
-            : err instanceof Error
-              ? err.message
-              : 'Something went wrong. Please try again.',
+          content: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
           premiumRequired: isPremiumRequired,
         },
       ]);
