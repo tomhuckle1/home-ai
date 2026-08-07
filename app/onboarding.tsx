@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View } from 'react-native';
+import Animated, { FadeIn, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 
 import { Button, Screen, Text, useTheme } from '@/src/design-system';
 import { useCompleteOnboarding } from '@/src/hooks/useProfile';
@@ -32,10 +33,10 @@ export default function OnboardingScreen() {
   const slide = SLIDES[step];
   const isLast = step === SLIDES.length - 1;
 
-  function finish() {
+  const finish = useCallback(() => {
     completeOnboarding.mutate();
     router.replace('/property/new');
-  }
+  }, [completeOnboarding]);
 
   return (
     <Screen edges={['top', 'bottom']} style={{ justifyContent: 'space-between', paddingVertical: theme.spacing.xl }}>
@@ -43,23 +44,41 @@ export default function OnboardingScreen() {
         <Button label="Skip" variant="ghost" fullWidth={false} onPress={finish} />
       </View>
 
-      <View style={{ alignItems: 'center', gap: theme.spacing.md, paddingHorizontal: theme.spacing.lg }}>
-        <Text style={{ fontSize: 56, lineHeight: 64 }}>{slide.icon}</Text>
+      <Animated.View
+        key={step}
+        entering={FadeInRight.duration(350)}
+        exiting={FadeOutLeft.duration(250)}
+        style={{ alignItems: 'center', gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg }}
+      >
+        <View
+          style={{
+            width: 96,
+            height: 96,
+            borderRadius: 48,
+            backgroundColor: theme.colors.accentMuted,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Text style={{ fontSize: 48, lineHeight: 56 }}>{slide.icon}</Text>
+        </View>
         <Text variant="title1" style={{ textAlign: 'center' }}>
           {slide.title}
         </Text>
-        <Text variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
+        <Text variant="body" color="textSecondary" style={{ textAlign: 'center', lineHeight: 24 }}>
           {slide.body}
         </Text>
-      </View>
+      </Animated.View>
 
-      <View style={{ gap: theme.spacing.lg }}>
+      <View style={{ gap: theme.spacing.md }}>
+        {/* Progress dots */}
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: theme.spacing.xs }}>
           {SLIDES.map((_, index) => (
-            <View
+            <Animated.View
               key={index}
+              entering={FadeIn}
               style={{
-                width: 8,
+                width: index === step ? 24 : 8,
                 height: 8,
                 borderRadius: 4,
                 backgroundColor: index === step ? theme.colors.accent : theme.colors.border,
@@ -68,7 +87,8 @@ export default function OnboardingScreen() {
           ))}
         </View>
         <Button
-          label={isLast ? "Let's get started" : 'Next'}
+          label={isLast ? "Let's get started" : 'Continue'}
+          size="lg"
           onPress={() => (isLast ? finish() : setStep((s) => s + 1))}
         />
       </View>
