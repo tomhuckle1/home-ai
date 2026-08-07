@@ -1,8 +1,22 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
-import { ActivityIndicator, Alert, FlatList, View } from 'react-native';
+import { useCallback, useEffect } from 'react';
+import { ActivityIndicator, Alert, FlatList, RefreshControl, View } from 'react-native';
 
-import { Badge, Button, Card, EmptyState, ListRow, Screen, Text, Thumbnail, useTheme, type ThemeColors } from '@/src/design-system';
+import {
+  Badge,
+  Button,
+  Card,
+  EmptyState,
+  ListRow,
+  ProgressRing,
+  QuickAction,
+  Screen,
+  SectionHeader,
+  Text,
+  Thumbnail,
+  useTheme,
+  type ThemeColors,
+} from '@/src/design-system';
 import { useHomeHealthScore } from '@/src/hooks/useHealthScore';
 import { useCompleteMaintenanceTask, useUpcomingMaintenance } from '@/src/hooks/useMaintenance';
 import { useProfile } from '@/src/hooks/useProfile';
@@ -13,33 +27,34 @@ import type { PropertyRow } from '@/src/types/database';
 export default function HomeScreen() {
   const theme = useTheme();
   const { data: profile } = useProfile();
-  const { data: properties, isLoading } = useProperties();
+  const { data: properties, isLoading, refetch, isRefetching } = useProperties();
   const firstProperty = properties?.[0];
 
   const firstName = profile?.full_name?.split(' ')[0];
 
   useEffect(() => {
-    // Only ever redirects a genuinely new account (no onboarded_at AND no
-    // properties yet) — existing accounts predate the onboarded_at column
-    // and would otherwise all read as "not onboarded" too.
     if (profile && !profile.onboarded_at && properties && properties.length === 0) {
       router.replace('/onboarding');
     }
   }, [profile, properties]);
 
+  const handleRefresh = useCallback(() => {
+    refetch();
+  }, [refetch]);
+
   return (
     <Screen edges={['top']}>
       <View
         style={{
-          paddingVertical: theme.spacing.md,
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          paddingTop: theme.spacing.md,
+          paddingBottom: theme.spacing.sm,
         }}
       >
         <Text variant="largeTitle">{firstName ? `Hi ${firstName}` : 'Home'}</Text>
-        {properties && properties.length > 0 ? (
-          <Button label="Add" variant="ghost" fullWidth={false} onPress={() => router.push('/property/new')} />
+        {firstProperty ? (
+          <Text variant="body" color="textSecondary" style={{ marginTop: 2 }}>
+            {[firstProperty.address_line1, firstProperty.city].filter(Boolean).join(', ')}
+          </Text>
         ) : null}
       </View>
 
@@ -50,14 +65,57 @@ export default function HomeScreen() {
           data={properties ?? []}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xxl }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={handleRefresh}
+              tintColor={theme.colors.accent}
+            />
+          }
           ListHeaderComponent={
             firstProperty ? (
-              <View style={{ gap: theme.spacing.sm, marginBottom: theme.spacing.md }}>
+              <View style={{ gap: theme.spacing.md, marginBottom: theme.spacing.sm }}>
+                {/* Quick actions */}
+                <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
+                  <QuickAction
+                    icon="scan"
+                    label="Scan"
+                    onPress={() =>
+                      router.push({
+                        pathname: '/capture/scan',
+                        params: { propertyId: firstProperty.id, mode: 'document' },
+                      })
+                    }
+                  />
+                  <QuickAction
+                    icon="add-circle-outline"
+                    label="Add room"
+                    onPress={() =>
+                      router.push({ pathname: '/room/new', params: { propertyId: firstProperty.id } })
+                    }
+                  />
+                  <QuickAction
+                    icon="chatbubble-outline"
+                    label="Ask AI"
+                    onPress={() => router.push('/(tabs)/ask-ai')}
+                  />
+                  <QuickAction
+                    icon="document-text-outline"
+                    label="Passport"
+                    onPress={() => router.push(`/passport/${firstProperty.id}`)}
+                  />
+                </View>
+
                 <HealthScoreCard propertyId={firstProperty.id} />
                 <UpcomingMaintenance propertyId={firstProperty.id} />
-                <Text variant="headline" style={{ marginTop: theme.spacing.xs }}>
-                  Properties
-                </Text>
+
+                {properties && properties.length > 1 ? (
+                  <SectionHeader
+                    title="Properties"
+                    actionLabel="Add"
+                    onAction={() => router.push('/property/new')}
+                  />
+                ) : null}
               </View>
             ) : null
           }
@@ -71,21 +129,7 @@ export default function HomeScreen() {
             />
           }
           renderItem={({ item }: { item: PropertyRow }) => (
-            <Card>
-              <ListRow
-                leading={
-                  item.cover_photo_path ? (
-                    <Thumbnail bucket="property-photos" path={item.cover_photo_path} />
-                  ) : (
-                    <Text style={{ fontSize: 24, lineHeight: 28 }}>🏠</Text>
-                  )
-                }
-                title={item.address_line1}
-                subtitle={[item.city, item.postcode].filter(Boolean).join(', ') || undefined}
-                showChevron
-                onPress={() => router.push(`/property/${item.id}`)}
-              />
-            </Card>
+            <PropertyCard property={item} />
           )}
         />
       )}
@@ -93,13 +137,51 @@ export default function HomeScreen() {
   );
 }
 
-type ScoreTone = 'accent' | 'warning' | 'danger';
+/* ── Property card ────────────────────────────────────────────────── */
 
-const MUTED_BY_TONE: Record<ScoreTone, keyof ThemeColors> = {
-  accent: 'accentMuted',
-  warning: 'warningMuted',
-  danger: 'dangerMuted',
-};
+function PropertyCard({ property }: { property: PropertyRow }) {
+  const theme = useTheme();
+
+  return (
+    <Card onPress={() => router.push(`/property/${property.id}`)}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+        {property.cover_photo_path ? (
+          <Thumbnail bucket="property-photos" path={property.cover_photo_path} size={52} />
+        ) : (
+          <View
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: theme.radius.md,
+              backgroundColor: theme.colors.accentMuted,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 24, lineHeight: 28 }}>🏠</Text>
+          </View>
+        )}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text variant="headline" numberOfLines={1}>
+            {property.address_line1}
+          </Text>
+          {property.city || property.postcode ? (
+            <Text variant="footnote" color="textSecondary" numberOfLines={1}>
+              {[property.city, property.postcode].filter(Boolean).join(', ')}
+            </Text>
+          ) : null}
+        </View>
+        <Text variant="body" color="textTertiary" style={{ marginLeft: theme.spacing.xs }}>
+          ›
+        </Text>
+      </View>
+    </Card>
+  );
+}
+
+/* ── Health score ─────────────────────────────────────────────────── */
+
+type ScoreTone = 'accent' | 'warning' | 'danger';
 
 function scoreTone(score: number): ScoreTone {
   if (score >= 80) return 'accent';
@@ -128,7 +210,9 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
   if (isLoading || !data) {
     return (
       <Card>
-        <ActivityIndicator />
+        <View style={{ paddingVertical: theme.spacing.sm, alignItems: 'center' }}>
+          <ActivityIndicator />
+        </View>
       </Card>
     );
   }
@@ -140,22 +224,9 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
   return (
     <Card onPress={() => router.push(`/property/${propertyId}`)}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.md }}>
-        <View
-          style={{
-            width: 56,
-            height: 56,
-            borderRadius: 28,
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: theme.colors[MUTED_BY_TONE[tone]],
-          }}
-        >
-          <Text variant="headline" color={tone}>
-            {data.score}
-          </Text>
-        </View>
+        <ProgressRing value={data.score} tone={tone} size={64} label={String(data.score)} />
         <View style={{ flex: 1, gap: 2 }}>
-          <Text variant="headline">Home Health Score</Text>
+          <Text variant="headline">Home Health</Text>
           <Text variant="footnote" color="textSecondary">
             {breakdown.overdue_maintenance > 0
               ? `${breakdown.overdue_maintenance} overdue maintenance item${breakdown.overdue_maintenance === 1 ? '' : 's'}`
@@ -163,33 +234,34 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
                 ? `${breakdown.expired_warranties} expired warrant${breakdown.expired_warranties === 1 ? 'y' : 'ies'}`
                 : 'Everything looks up to date'}
           </Text>
+          {tip ? (
+            <Text variant="caption" color="accent" style={{ marginTop: 2 }}>
+              {tip}
+            </Text>
+          ) : null}
         </View>
       </View>
-      {tip ? (
-        <Text variant="footnote" color="accentStrong" style={{ marginTop: theme.spacing.xs }}>
-          {tip}
-        </Text>
-      ) : null}
     </Card>
   );
 }
 
-/** The single highest-impact next step, in the same priority order the score itself weighs them. */
 function healthScoreTip(breakdown: Record<string, number>): string | null {
   if (breakdown.overdue_maintenance > 0) {
-    return 'Mark overdue maintenance done, or reschedule it, to bring your score back up.';
+    return 'Mark overdue items done to bring your score up';
   }
   if (breakdown.expired_warranties > 0) {
-    return 'Check those expired warranties — replace the item on file or note a new one.';
+    return 'Check those expired warranties';
   }
   if (breakdown.documents_recorded < 5) {
-    return 'Scan a few more receipts, manuals or certificates to boost your score.';
+    return 'Scan a few more documents to boost your score';
   }
   if (breakdown.assets_recorded < 3) {
-    return 'Add a few more items to your rooms to boost your score.';
+    return 'Add more items to your rooms';
   }
   return null;
 }
+
+/* ── Upcoming maintenance ─────────────────────────────────────────── */
 
 function UpcomingMaintenance({ propertyId }: { propertyId: string }) {
   const theme = useTheme();
@@ -202,9 +274,6 @@ function UpcomingMaintenance({ propertyId }: { propertyId: string }) {
   });
   const hasDueSoon = dueSoon.length > 0;
 
-  // Contextual permission ask (T7): the first time the user actually sees
-  // a reminder, not on app launch — that's when a notification prompt
-  // makes sense to them.
   useEffect(() => {
     if (hasDueSoon) {
       registerForPushNotificationsIfNeeded();
@@ -216,7 +285,7 @@ function UpcomingMaintenance({ propertyId }: { propertyId: string }) {
 
   return (
     <View style={{ gap: theme.spacing.xs }}>
-      <Text variant="headline">Maintenance</Text>
+      <SectionHeader title="Maintenance" />
       {dueSoon.map((task) => {
         const overdue = new Date(task.next_due_date) < new Date();
         return (

@@ -1,8 +1,10 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
+import Animated, { FadeIn, FadeInDown } from 'react-native-reanimated';
 
-import { Badge, Button, EmptyState, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Badge, Button, Card, EmptyState, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useAskAi } from '@/src/hooks/useAiAssistant';
 import { useProperties } from '@/src/hooks/useProperties';
 import { EdgeFunctionError } from '@/src/lib/functionError';
@@ -14,12 +16,13 @@ type ChatMessage = {
   content: string;
   citations?: AiCitation[];
   premiumRequired?: boolean;
+  timestamp: Date;
 };
 
 const EXAMPLE_QUESTIONS = [
-  'Is my washing machine still under warranty?',
-  'When was my boiler last serviced?',
-  'Who installed my windows?',
+  { icon: 'shield-checkmark-outline' as const, text: 'Is my washing machine still under warranty?' },
+  { icon: 'flame-outline' as const, text: 'When was my boiler last serviced?' },
+  { icon: 'construct-outline' as const, text: 'Who installed my windows?' },
 ];
 
 export default function AskAiScreen() {
@@ -37,7 +40,12 @@ export default function AskAiScreen() {
     const trimmed = question.trim();
     if (!trimmed || !property) return;
 
-    const userMessage: ChatMessage = { id: `local-${Date.now()}`, role: 'user', content: trimmed };
+    const userMessage: ChatMessage = {
+      id: `local-${Date.now()}`,
+      role: 'user',
+      content: trimmed,
+      timestamp: new Date(),
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
 
@@ -46,7 +54,13 @@ export default function AskAiScreen() {
       setConversationId(result.conversationId);
       setMessages((prev) => [
         ...prev,
-        { id: `local-${Date.now()}-a`, role: 'assistant', content: result.answer, citations: result.citations },
+        {
+          id: `local-${Date.now()}-a`,
+          role: 'assistant',
+          content: result.answer,
+          citations: result.citations,
+          timestamp: new Date(),
+        },
       ]);
     } catch (err) {
       const isPremiumRequired = err instanceof EdgeFunctionError && err.code === 'premium_required';
@@ -57,6 +71,7 @@ export default function AskAiScreen() {
           role: 'assistant',
           content: err instanceof Error ? err.message : 'Something went wrong. Please try again.',
           premiumRequired: isPremiumRequired,
+          timestamp: new Date(),
         },
       ]);
     } finally {
@@ -93,6 +108,9 @@ export default function AskAiScreen() {
       >
         <View style={{ paddingHorizontal: theme.spacing.lg, paddingVertical: theme.spacing.sm }}>
           <Text variant="largeTitle">Ask AI</Text>
+          <Text variant="footnote" color="textSecondary" style={{ marginTop: 2 }}>
+            Answers only from what you&apos;ve recorded
+          </Text>
         </View>
 
         <FlatList
@@ -100,48 +118,15 @@ export default function AskAiScreen() {
           data={messages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{
-            gap: theme.spacing.md,
+            gap: theme.spacing.sm,
             paddingHorizontal: theme.spacing.lg,
             paddingBottom: theme.spacing.lg,
             flexGrow: 1,
           }}
           onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
-          ListEmptyComponent={
-            <View style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.md }}>
-              <EmptyState
-                icon="💬"
-                title="Ask about your home"
-                description="Answers come only from what you've recorded — with a source you can check."
-              />
-              <View style={{ gap: theme.spacing.xs }}>
-                {EXAMPLE_QUESTIONS.map((q) => (
-                  <Pressable
-                    key={q}
-                    accessibilityRole="button"
-                    onPress={() => handleAsk(q)}
-                    style={{
-                      backgroundColor: theme.colors.surfaceAlt,
-                      borderRadius: theme.radius.md,
-                      padding: theme.spacing.sm,
-                    }}
-                  >
-                    <Text variant="body">{q}</Text>
-                  </Pressable>
-                ))}
-              </View>
-            </View>
-          }
+          ListEmptyComponent={<WelcomeState onAsk={handleAsk} />}
           renderItem={({ item }) => <ChatBubble message={item} />}
-          ListFooterComponent={
-            askAi.isPending ? (
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
-                <ActivityIndicator size="small" />
-                <Text variant="footnote" color="textSecondary">
-                  Thinking…
-                </Text>
-              </View>
-            ) : null
-          }
+          ListFooterComponent={askAi.isPending ? <TypingIndicator /> : null}
         />
 
         <View
@@ -149,9 +134,11 @@ export default function AskAiScreen() {
             flexDirection: 'row',
             alignItems: 'flex-end',
             gap: theme.spacing.xs,
-            padding: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.sm,
             borderTopWidth: 1,
             borderTopColor: theme.colors.border,
+            backgroundColor: theme.colors.background,
           }}
         >
           <View style={{ flex: 1 }}>
@@ -177,7 +164,11 @@ export default function AskAiScreen() {
               justifyContent: 'center',
             }}
           >
-            <Text style={{ color: input.trim() ? theme.colors.onAccent : theme.colors.textTertiary }}>↑</Text>
+            <Ionicons
+              name="arrow-up"
+              size={20}
+              color={input.trim() ? theme.colors.onAccent : theme.colors.textTertiary}
+            />
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -185,35 +176,130 @@ export default function AskAiScreen() {
   );
 }
 
+/* ── Welcome state ────────────────────────────────────────────────── */
+
+function WelcomeState({ onAsk }: { onAsk: (q: string) => void }) {
+  const theme = useTheme();
+
+  return (
+    <Animated.View entering={FadeIn.duration(400)} style={{ flex: 1, justifyContent: 'center', gap: theme.spacing.lg }}>
+      <View style={{ alignItems: 'center', gap: theme.spacing.sm }}>
+        <View
+          style={{
+            width: 64,
+            height: 64,
+            borderRadius: 32,
+            backgroundColor: theme.colors.accentMuted,
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <Ionicons name="chatbubble-ellipses" size={28} color={theme.colors.accent} />
+        </View>
+        <Text variant="title2" style={{ textAlign: 'center' }}>
+          Ask about your home
+        </Text>
+        <Text variant="body" color="textSecondary" style={{ textAlign: 'center' }}>
+          Every answer comes with a source you can check
+        </Text>
+      </View>
+
+      <View style={{ gap: theme.spacing.xs }}>
+        <Text variant="caption" color="textTertiary" style={{ marginBottom: 2 }}>
+          TRY ASKING
+        </Text>
+        {EXAMPLE_QUESTIONS.map((q) => (
+          <Pressable
+            key={q.text}
+            accessibilityRole="button"
+            onPress={() => onAsk(q.text)}
+            style={({ pressed }) => ({
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: theme.spacing.sm,
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.radius.md,
+              borderWidth: 1,
+              borderColor: theme.colors.border,
+              padding: theme.spacing.sm,
+              opacity: pressed ? 0.7 : 1,
+            })}
+          >
+            <Ionicons name={q.icon} size={18} color={theme.colors.accent} />
+            <Text variant="body" style={{ flex: 1 }}>
+              {q.text}
+            </Text>
+            <Ionicons name="arrow-forward" size={14} color={theme.colors.textTertiary} />
+          </Pressable>
+        ))}
+      </View>
+    </Animated.View>
+  );
+}
+
+/* ── Typing indicator ─────────────────────────────────────────────── */
+
+function TypingIndicator() {
+  const theme = useTheme();
+  const [dots, setDots] = useState(1);
+
+  useEffect(() => {
+    const interval = setInterval(() => setDots((d) => (d % 3) + 1), 500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <Animated.View entering={FadeInDown.duration(200)}>
+      <View
+        style={{
+          alignSelf: 'flex-start',
+          backgroundColor: theme.colors.surfaceAlt,
+          borderRadius: theme.radius.lg,
+          paddingHorizontal: theme.spacing.md,
+          paddingVertical: theme.spacing.xs,
+        }}
+      >
+        <Text variant="body" color="textSecondary">
+          {'•'.repeat(dots)}
+        </Text>
+      </View>
+    </Animated.View>
+  );
+}
+
+/* ── Chat bubble ──────────────────────────────────────────────────── */
+
 function ChatBubble({ message }: { message: ChatMessage }) {
   const theme = useTheme();
   const isUser = message.role === 'user';
 
   if (message.premiumRequired) {
     return (
-      <View style={{ alignItems: 'flex-start', gap: theme.spacing.xs, maxWidth: '90%' }}>
-        <View
-          style={{
-            backgroundColor: theme.colors.accentMuted,
-            borderRadius: theme.radius.lg,
-            padding: theme.spacing.sm,
-            gap: theme.spacing.xs,
-          }}
-        >
-          <Text variant="body">{message.content}</Text>
-          <Button label="Upgrade to Premium" size="md" fullWidth={false} onPress={() => router.push('/subscription/paywall')} />
-        </View>
-      </View>
+      <Animated.View entering={FadeInDown.duration(300)} style={{ alignItems: 'flex-start', gap: theme.spacing.xs, maxWidth: '90%' }}>
+        <Card>
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="body">{message.content}</Text>
+            <Button
+              label="Upgrade to Premium"
+              size="md"
+              fullWidth={false}
+              onPress={() => router.push('/subscription/paywall')}
+            />
+          </View>
+        </Card>
+      </Animated.View>
     );
   }
 
   return (
-    <View style={{ alignItems: isUser ? 'flex-end' : 'flex-start', gap: theme.spacing.xxs }}>
+    <Animated.View entering={FadeInDown.duration(200)} style={{ alignItems: isUser ? 'flex-end' : 'flex-start', gap: theme.spacing.xxs }}>
       <View
         style={{
           maxWidth: '85%',
           backgroundColor: isUser ? theme.colors.accent : theme.colors.surfaceAlt,
           borderRadius: theme.radius.lg,
+          borderBottomRightRadius: isUser ? theme.radius.sm : theme.radius.lg,
+          borderBottomLeftRadius: isUser ? theme.radius.lg : theme.radius.sm,
           paddingHorizontal: theme.spacing.sm,
           paddingVertical: theme.spacing.xs,
         }}
@@ -239,6 +325,6 @@ function ChatBubble({ message }: { message: ChatMessage }) {
           ))}
         </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
