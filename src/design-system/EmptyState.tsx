@@ -1,4 +1,5 @@
 import { View } from 'react-native';
+import Animated, { FadeIn } from 'react-native-reanimated';
 
 import { Button } from './Button';
 import { Text } from './Text';
@@ -16,19 +17,29 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
   const theme = useTheme();
 
   return (
-    <View
+    <Animated.View
+      entering={FadeIn.duration(400)}
       style={{
         alignItems: 'center',
         paddingVertical: theme.spacing.xxl,
         paddingHorizontal: theme.spacing.lg,
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
       }}
     >
       {icon ? (
-        // lineHeight must be set explicitly alongside fontSize — Text's
-        // "body" variant bakes in lineHeight:22, which clips a 40px emoji
-        // top and bottom if left unoverridden.
-        <Text style={{ fontSize: 40, lineHeight: 48, marginBottom: theme.spacing.xs }}>{icon}</Text>
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: theme.colors.surfaceAlt,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: theme.spacing.xxs,
+          }}
+        >
+          <Text style={{ fontSize: 32, lineHeight: 38 }}>{icon}</Text>
+        </View>
       ) : null}
       <Text variant="title2" style={{ textAlign: 'center' }}>
         {title}
@@ -37,14 +48,16 @@ export function EmptyState({ icon, title, description, actionLabel, onAction }: 
         <Text
           variant="body"
           color="textSecondary"
-          style={{ textAlign: 'center', marginBottom: theme.spacing.sm }}
+          style={{ textAlign: 'center', lineHeight: 22, maxWidth: 300 }}
         >
           {description}
         </Text>
       ) : null}
       {actionLabel && onAction ? (
-        <Button label={actionLabel} onPress={onAction} fullWidth={false} />
+        <View style={{ marginTop: theme.spacing.xs }}>
+          <Button label={actionLabel} onPress={onAction} fullWidth={false} />
+        </View>
       ) : null}
-    </View>
+    </Animated.View>
   );
 }
