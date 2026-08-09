@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Image, Pressable, View } from 'react-native';
 import Animated, { FadeIn, FadeInRight, FadeOutLeft } from 'react-native-reanimated';
 
 import { Button, Screen, Text, useTheme } from '@/src/design-system';
@@ -65,9 +65,13 @@ export default function OnboardingScreen() {
         style={{ alignItems: 'center', gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg }}
       >
         {/* Visual element */}
-        <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: theme.colors.accentMuted, alignItems: 'center', justifyContent: 'center' }}>
-          <Text style={{ fontSize: 48, lineHeight: 56 }}>{slide.icon}</Text>
-        </View>
+        {step === 0 ? (
+          <Image source={require('@/assets/images/logo.png')} style={{ width: 120, height: 120 }} resizeMode="contain" />
+        ) : (
+          <View style={{ width: 120, height: 120, borderRadius: 60, backgroundColor: theme.colors.accentMuted, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 48, lineHeight: 56 }}>{slide.icon}</Text>
+          </View>
+        )}
 
         {/* Visual flow indicator */}
         <Text style={{ fontSize: 28, lineHeight: 36, textAlign: 'center', letterSpacing: 4 }}>{slide.visual}</Text>

@@ -1,13 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useCallback, useEffect } from 'react';
-import { Alert, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import { Alert, Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { Badge, Button, Card, ListRow, ProgressRing, Screen, SectionHeader, SkeletonList, StatCard, Text, useTheme } from '@/src/design-system';
 import { useAssetsByProperty } from '@/src/hooks/useAssets';
 import { useHomeHealthScore } from '@/src/hooks/useHealthScore';
 import { useCompleteMaintenanceTask, useUpcomingMaintenance } from '@/src/hooks/useMaintenance';
-import { useProfile } from '@/src/hooks/useProfile';
+import { useProfile, useHousehold } from '@/src/hooks/useProfile';
 import { useProperties } from '@/src/hooks/useProperties';
 import { useRooms } from '@/src/hooks/useRooms';
 import { useSpendingSummary } from '@/src/hooks/useSpending';
@@ -15,13 +15,16 @@ import { useInsurancePolicies, useVehicles } from '@/src/hooks/useVehiclesAndIns
 import { useWarrantyAlerts } from '@/src/hooks/useWarrantyAlerts';
 import { useSmartNudges } from '@/src/hooks/useSmartNudges';
 import { registerForPushNotificationsIfNeeded } from '@/src/lib/pushNotifications';
+import { useAllDocuments } from '@/src/hooks/useDocuments';
 
 export default function HomeScreen() {
   const theme = useTheme();
   const { data: profile } = useProfile();
+  const { data: household } = useHousehold();
   const { data: properties, isLoading, refetch, isRefetching } = useProperties();
   const firstProperty = properties?.[0];
   const firstName = profile?.full_name?.split(' ')[0];
+  const isPremium = (household?.subscription?.entitlement ?? 'free') !== 'free';
 
   useEffect(() => {
     if (profile && !profile.onboarded_at && properties && properties.length === 0) {
@@ -36,13 +39,11 @@ export default function HomeScreen() {
   if (!firstProperty) {
     return (
       <Screen edges={['top']} style={{ justifyContent: 'center', gap: theme.spacing.lg, paddingHorizontal: theme.spacing.lg }}>
-        <View style={{ alignItems: 'center', gap: theme.spacing.sm }}>
-          <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: theme.colors.accentMuted, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: 40, lineHeight: 48 }}>🏠</Text>
-          </View>
-          <Text variant="title1" style={{ textAlign: 'center' }}>Welcome to Home Memory</Text>
+        <View style={{ alignItems: 'center', gap: theme.spacing.md }}>
+          <Image source={require('@/assets/images/logo.png')} style={{ width: 100, height: 100 }} resizeMode="contain" />
+          <Text variant="title1" style={{ textAlign: 'center' }}>Welcome to HomeAI</Text>
           <Text variant="body" color="textSecondary" style={{ textAlign: 'center', lineHeight: 22, maxWidth: 300 }}>
-            Start by adding your property, then build up its record — rooms, appliances, insurance, and more.
+            Manage. Protect. Remind.{'\n'}Start by adding your property.
           </Text>
         </View>
         <Button label="Add your property" size="lg" onPress={() => router.push('/property/new')} />
@@ -53,21 +54,28 @@ export default function HomeScreen() {
   return (
     <Screen edges={['top']}>
       <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.xxl, gap: theme.spacing.md }} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={handleRefresh} tintColor={theme.colors.accent} />}>
+        {/* Header */}
         <View style={{ paddingTop: theme.spacing.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <View>
-            <Text variant="largeTitle">{firstName ? `Hi ${firstName}` : 'Home'}</Text>
-            <Text variant="footnote" color="textSecondary" style={{ marginTop: 2 }}>{[firstProperty.address_line1, firstProperty.city].filter(Boolean).join(', ')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+            <Image source={require('@/assets/images/logo.png')} style={{ width: 36, height: 36, borderRadius: 8 }} resizeMode="contain" />
+            <View>
+              <Text variant="largeTitle">{firstName ? `Hi ${firstName}` : 'Home'}</Text>
+              <Text variant="footnote" color="textSecondary" style={{ marginTop: 1 }}>{firstProperty.address_line1}</Text>
+            </View>
           </View>
           <Pressable accessibilityRole="button" accessibilityLabel="Search" onPress={() => router.push('/search')}>
             <Ionicons name="search" size={22} color={theme.colors.textSecondary} />
           </Pressable>
         </View>
 
-        {/* Getting started checklist */}
+        {/* Quick stats bar */}
+        <QuickStats propertyId={firstProperty.id} />
+
+        {/* Getting started */}
         <GettingStarted propertyId={firstProperty.id} />
 
         {/* Smart nudges */}
-        <SmartNudges propertyId={firstProperty.id} />
+        <SmartNudges propertyId={firstProperty.id} isPremium={isPremium} />
 
         {/* Health score */}
         <HealthScoreCard propertyId={firstProperty.id} />
@@ -80,87 +88,135 @@ export default function HomeScreen() {
 
         {/* Maintenance */}
         <MaintenanceDue propertyId={firstProperty.id} />
+
+        {/* Premium upsell for free users */}
+        {!isPremium ? <PremiumPrompt /> : null}
       </ScrollView>
     </Screen>
   );
 }
 
-/* ── Getting started checklist ─────────────────────────────────────── */
+/* ── Quick stats ──────────────────────────────────────────────────── */
+
+function QuickStats({ propertyId }: { propertyId: string }) {
+  const theme = useTheme();
+  const { data: assets } = useAssetsByProperty(propertyId);
+  const { data: docs } = useAllDocuments('');
+  const { data: tasks } = useUpcomingMaintenance(propertyId);
+
+  const itemCount = assets?.length ?? 0;
+  const docCount = docs?.length ?? 0;
+  const reminderCount = (tasks ?? []).filter((t) => t.is_active).length;
+
+  if (itemCount === 0 && docCount === 0) return null;
+
+  return (
+    <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
+      <View style={{ flex: 1, backgroundColor: theme.colors.accentMuted, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center' }}>
+        <Text variant="title2">{itemCount}</Text>
+        <Text variant="caption" color="textSecondary">items</Text>
+      </View>
+      <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center' }}>
+        <Text variant="title2">{docCount}</Text>
+        <Text variant="caption" color="textSecondary">docs</Text>
+      </View>
+      <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center' }}>
+        <Text variant="title2">{reminderCount}</Text>
+        <Text variant="caption" color="textSecondary">reminders</Text>
+      </View>
+    </View>
+  );
+}
+
+/* ── Getting started ──────────────────────────────────────────────── */
 
 function GettingStarted({ propertyId }: { propertyId: string }) {
   const theme = useTheme();
   const { data: rooms } = useRooms(propertyId);
   const { data: assets } = useAssetsByProperty(propertyId);
   const { data: insurance } = useInsurancePolicies(propertyId);
-  const { data: vehicles } = useVehicles(propertyId);
 
   const hasRooms = (rooms?.length ?? 0) > 0;
   const hasItems = (assets?.length ?? 0) > 0;
   const hasInsurance = (insurance?.length ?? 0) > 0;
-  const hasVehicles = (vehicles?.length ?? 0) > 0;
   const completedCount = [hasRooms, hasItems, hasInsurance].filter(Boolean).length;
-  const allDone = completedCount >= 3;
 
-  if (allDone) return null;
+  if (completedCount >= 3) return null;
 
   const steps = [
-    { done: hasRooms, icon: '🚪', title: 'Add your first room', subtitle: 'Kitchen, bathroom, bedroom', action: () => router.push({ pathname: '/room/new', params: { propertyId } }) },
-    { done: hasItems, icon: '📦', title: 'Record something', subtitle: 'Boiler, fire alarm, or an appliance', action: () => router.push('/add') },
+    { done: hasItems, icon: '📦', title: 'Record your first item', subtitle: 'Boiler, fire alarm, or appliance', action: () => router.push('/add') },
+    { done: hasRooms, icon: '🚪', title: 'Name your rooms', subtitle: 'Kitchen, bathroom, bedroom', action: () => router.push({ pathname: '/room/new', params: { propertyId } }) },
     { done: hasInsurance, icon: '🔑', title: 'Add your insurance', subtitle: 'Never miss a renewal', action: () => router.push({ pathname: '/add/insurance', params: { propertyId } }) },
-    { done: hasVehicles, icon: '🚗', title: 'Add your vehicle', subtitle: 'Track MOT, tax, and service', action: () => router.push({ pathname: '/add/vehicle', params: { propertyId } }) },
   ];
 
   return (
-    <View style={{ gap: theme.spacing.xs }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text variant="headline">Getting started</Text>
-        <Text variant="caption" color="textSecondary">{completedCount}/3 done</Text>
+    <Card>
+      <View style={{ gap: theme.spacing.sm }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text variant="headline">Getting started</Text>
+          <View style={{ flexDirection: 'row', gap: 4 }}>
+            {[0, 1, 2].map((i) => (
+              <View key={i} style={{ width: i < completedCount ? 24 : 8, height: 6, borderRadius: 3, backgroundColor: i < completedCount ? theme.colors.accent : theme.colors.border }} />
+            ))}
+          </View>
+        </View>
+        {steps.filter((s) => !s.done).slice(0, 2).map((step) => (
+          <Pressable key={step.title} accessibilityRole="button" onPress={step.action} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, opacity: pressed ? 0.7 : 1 })}>
+            <Text style={{ fontSize: 22 }}>{step.icon}</Text>
+            <View style={{ flex: 1 }}>
+              <Text variant="body">{step.title}</Text>
+              <Text variant="caption" color="textSecondary">{step.subtitle}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} />
+          </Pressable>
+        ))}
       </View>
-      {steps.filter((s) => !s.done).slice(0, 3).map((step) => (
-        <Card key={step.title} onPress={step.action}>
-          <ListRow
-            leading={<Text style={{ fontSize: 22, lineHeight: 26 }}>{step.icon}</Text>}
-            title={step.title}
-            subtitle={step.subtitle}
-            showChevron
-          />
-        </Card>
-      ))}
-    </View>
+    </Card>
+  );
+}
+
+/* ── Premium prompt ───────────────────────────────────────────────── */
+
+function PremiumPrompt() {
+  const theme = useTheme();
+  return (
+    <Pressable accessibilityRole="button" onPress={() => router.push('/subscription/paywall')} style={({ pressed }) => ({ opacity: pressed ? 0.8 : 1 })}>
+      <View style={{ backgroundColor: theme.colors.accentMuted, borderRadius: theme.radius.lg, padding: theme.spacing.md, flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: theme.colors.accent, alignItems: 'center', justifyContent: 'center' }}>
+          <Ionicons name="sparkles" size={22} color={theme.colors.onAccent} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text variant="headline">Upgrade to Premium</Text>
+          <Text variant="caption" color="textSecondary">Unlimited items, smart alerts, family sharing — £4.99/mo</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={theme.colors.accent} />
+      </View>
+    </Pressable>
   );
 }
 
 /* ── Smart nudges ─────────────────────────────────────────────────── */
 
-function SmartNudges({ propertyId }: { propertyId: string }) {
+function SmartNudges({ propertyId, isPremium }: { propertyId: string; isPremium: boolean }) {
   const theme = useTheme();
   const { data: nudges } = useSmartNudges(propertyId);
 
-  if (!nudges || nudges.length === 0) return null;
+  if (!nudges || nudges.length === 0) {
+    // Show a teaser for free users
+    if (!isPremium) return null;
+    return null;
+  }
 
-  const toneColors = {
-    warning: theme.colors.warningMuted,
-    info: theme.colors.accentMuted,
-    tip: theme.colors.surfaceAlt,
-  };
+  const toneColors = { warning: theme.colors.warningMuted, info: theme.colors.accentMuted, tip: theme.colors.surfaceAlt };
+  const visibleNudges = isPremium ? nudges.slice(0, 5) : nudges.slice(0, 2);
+  const hiddenCount = isPremium ? 0 : Math.max(0, nudges.length - 2);
 
   return (
     <View style={{ gap: theme.spacing.xs }}>
-      {nudges.slice(0, 4).map((nudge) => (
-        <Pressable
-          key={nudge.id}
-          accessibilityRole="button"
-          onPress={nudge.action ? () => router.push(nudge.action!.route as any) : undefined}
-          style={({ pressed }) => ({
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.sm,
-            backgroundColor: toneColors[nudge.tone],
-            borderRadius: theme.radius.lg,
-            padding: theme.spacing.sm,
-            opacity: pressed && nudge.action ? 0.7 : 1,
-          })}
-        >
+      <SectionHeader title="For your attention" />
+      {visibleNudges.map((nudge) => (
+        <Pressable key={nudge.id} accessibilityRole="button" onPress={nudge.action ? () => router.push(nudge.action!.route as any) : undefined}
+          style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, backgroundColor: toneColors[nudge.tone], borderRadius: theme.radius.lg, padding: theme.spacing.sm, opacity: pressed && nudge.action ? 0.7 : 1 })}>
           <Text style={{ fontSize: 20, lineHeight: 24 }}>{nudge.icon}</Text>
           <View style={{ flex: 1, gap: 1 }}>
             <Text variant="body" numberOfLines={1}>{nudge.title}</Text>
@@ -169,6 +225,12 @@ function SmartNudges({ propertyId }: { propertyId: string }) {
           {nudge.action ? <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} /> : null}
         </Pressable>
       ))}
+      {hiddenCount > 0 ? (
+        <Pressable accessibilityRole="button" onPress={() => router.push('/subscription/paywall')} style={({ pressed }) => ({ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm, backgroundColor: theme.colors.accentMuted, borderRadius: theme.radius.lg, padding: theme.spacing.sm, opacity: pressed ? 0.7 : 1 })}>
+          <Ionicons name="lock-closed" size={18} color={theme.colors.accent} />
+          <Text variant="body" color="accent">{hiddenCount} more alert{hiddenCount === 1 ? '' : 's'} — upgrade to see all</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -181,7 +243,7 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
 
   if (error) return (
     <Card onPress={() => router.push('/subscription/paywall')}>
-      <ListRow leading={<Text style={{ fontSize: 20 }}>🩺</Text>} title="Home Health Score" subtitle="Upgrade to Premium" trailing={<Badge label="Premium" tone="accent" />} showChevron />
+      <ListRow leading={<Text style={{ fontSize: 20 }}>🩺</Text>} title="Home Health Score" subtitle="Upgrade to see your score" trailing={<Badge label="Premium" tone="accent" />} showChevron />
     </Card>
   );
   if (isLoading || !data) return null;
@@ -194,9 +256,7 @@ function HealthScoreCard({ propertyId }: { propertyId: string }) {
         <ProgressRing value={data.score} tone={tone} size={64} label={String(data.score)} />
         <View style={{ flex: 1, gap: 2 }}>
           <Text variant="headline">Home Health</Text>
-          <Text variant="footnote" color="textSecondary">
-            {breakdown.overdue_maintenance > 0 ? `${breakdown.overdue_maintenance} overdue item${breakdown.overdue_maintenance === 1 ? '' : 's'}` : 'Everything looks up to date'}
-          </Text>
+          <Text variant="footnote" color="textSecondary">{breakdown.overdue_maintenance > 0 ? `${breakdown.overdue_maintenance} overdue item${breakdown.overdue_maintenance === 1 ? '' : 's'}` : 'Everything looks up to date'}</Text>
         </View>
       </View>
     </Card>
@@ -238,7 +298,7 @@ function MaintenanceDue({ propertyId }: { propertyId: string }) {
   const theme = useTheme();
   const { data: tasks } = useUpcomingMaintenance(propertyId);
   const completeTask = useCompleteMaintenanceTask();
-  const dueSoon = (tasks ?? []).filter((t) => (new Date(t.next_due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24) < 30);
+  const dueSoon = (tasks ?? []).filter((t) => (new Date(t.next_due_date).getTime() - Date.now()) / 86400000 < 30);
 
   useEffect(() => { if (dueSoon.length > 0) registerForPushNotificationsIfNeeded(); }, [dueSoon.length]);
   if (dueSoon.length === 0) return null;
@@ -251,7 +311,7 @@ function MaintenanceDue({ propertyId }: { propertyId: string }) {
         return (
           <Card key={task.id}>
             <ListRow title={task.title} subtitle={`Due ${task.next_due_date}`} trailing={overdue ? <Badge label="Overdue" tone="danger" /> : undefined} />
-            <Button label="Mark done" variant="secondary" onPress={() => completeTask.mutate({ taskId: task.id, propertyId }, { onError: (err) => Alert.alert('Error', err instanceof Error ? err.message : 'Please try again.') })} loading={completeTask.isPending} />
+            <Button label="Mark done" variant="secondary" onPress={() => completeTask.mutate({ taskId: task.id, propertyId }, { onError: (err) => Alert.alert('Error', err instanceof Error ? err.message : 'Try again.') })} loading={completeTask.isPending} />
           </Card>
         );
       })}
