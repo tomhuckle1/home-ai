@@ -228,5 +228,6 @@ export type SpecialCategory = {
 export const SPECIAL_CATEGORIES: SpecialCategory[] = [
   { id: 'insurance', icon: '🔑', label: 'Insurance & policy', description: 'Home, car, life, boiler cover', route: '/add/insurance' },
   { id: 'vehicle', icon: '🚗', label: 'Vehicle', description: 'Car, motorbike — MOT, tax, insurance', route: '/add/vehicle' },
+  { id: 'energy', icon: '⚡', label: 'Energy & meters', description: 'Track electricity, gas, water, solar', route: '/energy' },
   { id: 'document', icon: '📄', label: 'Document', description: 'Scan or upload a receipt, manual, certificate', route: '/capture/scan' },
 ];

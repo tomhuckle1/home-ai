@@ -180,6 +180,9 @@ function OverviewView({ property, refetch, isRefetching }: { property: PropertyR
       ) : null}
 
       {/* Passport */}
+      <Card onPress={() => router.push({ pathname: '/energy', params: { propertyId: property.id } })}>
+        <ListRow leading={<Ionicons name="flash-outline" size={20} color={theme.colors.accent} />} title="Energy & meters" subtitle="Track electricity, gas, water, and solar" showChevron />
+      </Card>
       <Card onPress={() => router.push(`/passport/${property.id}`)}>
         <ListRow leading={<Ionicons name="ribbon-outline" size={20} color={theme.colors.accent} />} title="Home Passport" subtitle="Generate a shareable property record" showChevron />
       </Card>

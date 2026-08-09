@@ -541,3 +541,20 @@ export type Database = {
     };
   };
 }
+
+export type MeterType = 'electricity' | 'gas' | 'water' | 'solar_generation' | 'solar_export';
+
+export type MeterReadingRow = {
+  id: string;
+  property_id: string;
+  meter_type: MeterType;
+  reading: number;
+  unit: string;
+  reading_date: string;
+  photo_path: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+}
+export type MeterReadingInsert = Pick<MeterReadingRow, 'property_id' | 'meter_type' | 'reading' | 'reading_date'> &
+  Partial<Omit<MeterReadingRow, 'id' | 'property_id' | 'meter_type' | 'reading' | 'reading_date' | 'created_at'>>;

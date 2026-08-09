@@ -57,7 +57,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={{ paddingTop: theme.spacing.md, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
-            <Image source={require('@/assets/images/logo.png')} style={{ width: 36, height: 36, borderRadius: 8 }} resizeMode="contain" />
+            <Image source={require('@/assets/images/logo.png')} style={{ width: 44, height: 44, borderRadius: 10 }} resizeMode="contain" />
             <View>
               <Text variant="largeTitle">{firstName ? `Hi ${firstName}` : 'Home'}</Text>
               <Text variant="footnote" color="textSecondary" style={{ marginTop: 1 }}>{firstProperty.address_line1}</Text>
@@ -112,18 +112,18 @@ function QuickStats({ propertyId }: { propertyId: string }) {
 
   return (
     <View style={{ flexDirection: 'row', gap: theme.spacing.xs }}>
-      <View style={{ flex: 1, backgroundColor: theme.colors.accentMuted, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center' }}>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/(tabs)/my-home')} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.colors.accentMuted, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}>
         <Text variant="title2">{itemCount}</Text>
         <Text variant="caption" color="textSecondary">items</Text>
-      </View>
-      <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center' }}>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/(tabs)/my-home')} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}>
         <Text variant="title2">{docCount}</Text>
         <Text variant="caption" color="textSecondary">docs</Text>
-      </View>
-      <View style={{ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center' }}>
+      </Pressable>
+      <Pressable accessibilityRole="button" onPress={() => router.push('/(tabs)/index')} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}>
         <Text variant="title2">{reminderCount}</Text>
         <Text variant="caption" color="textSecondary">reminders</Text>
-      </View>
+      </Pressable>
     </View>
   );
 }

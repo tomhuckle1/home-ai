@@ -128,6 +128,7 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
         <Stack.Screen name="search/index" options={{ headerShown: false }} />
         <Stack.Screen name="ai-history/index" options={{ headerShown: true, title: 'Past conversations' }} />
         <Stack.Screen name="ai-history/[id]" options={{ headerShown: true, title: 'Conversation' }} />
+        <Stack.Screen name="energy/index" options={{ headerShown: false }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="(auth)" />

@@ -11,15 +11,18 @@ import type { PurchasesPackage } from 'react-native-purchases';
 
 const FREE_FEATURES = [
   { text: '1 property', included: true },
-  { text: 'Up to 15 items', included: true },
-  { text: 'Up to 10 documents', included: true },
-  { text: '5 AI questions per month', included: true },
-  { text: 'Up to 5 reminders', included: true },
+  { text: 'Up to 5 items', included: true },
+  { text: 'Up to 3 documents', included: true },
+  { text: '3 AI questions per month', included: true },
+  { text: 'Up to 3 reminders', included: true },
   { text: 'Smart nudges & alerts', included: false },
-  { text: 'Unlimited everything', included: false },
+  { text: 'Unlimited items & documents', included: false },
+  { text: 'Unlimited AI questions', included: false },
+  { text: 'Vehicles & insurance tracking', included: false },
   { text: 'Family sharing', included: false },
   { text: 'Home Health Score', included: false },
   { text: 'Home Passport', included: false },
+  { text: 'Spending insights', included: false },
 ];
 
 const PREMIUM_FEATURES = [

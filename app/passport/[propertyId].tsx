@@ -27,10 +27,16 @@ export default function PassportScreen() {
     <Screen edges={['bottom']}>
       <View style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.md }}>
         <Text variant="body" color="textSecondary">
-          A Home Passport is a secure link with your property&apos;s full record — appliances, manuals, receipts,
-          improvements and maintenance history — for a buyer to view without needing the app. Links expire after 90
-          days, and you can revoke one at any time.
+          A Home Passport is a secure, read-only link for a buyer to view your property record. Personal data is automatically filtered — insurance policies, purchase prices, mortgage documents, and contractor contact details are excluded from the shared view.
         </Text>
+        <Card>
+          <View style={{ gap: theme.spacing.xs }}>
+            <Text variant="caption" color="textTertiary">INCLUDED IN PASSPORT</Text>
+            <Text variant="footnote" color="textSecondary">Property details, rooms, appliances (brand/model only), safety devices, certificates (gas safety, FENSA, EPC), maintenance history</Text>
+            <Text variant="caption" color="textTertiary" style={{ marginTop: theme.spacing.xxs }}>EXCLUDED (PRIVATE)</Text>
+            <Text variant="footnote" color="textSecondary">Insurance policies, purchase prices, mortgage docs, personal receipts, contractor phone/email, vehicle information, policy numbers</Text>
+          </View>
+        </Card>
         {isPremium ? (
           <Button label="Generate a new passport" onPress={() => generate.mutate()} loading={generate.isPending} />
         ) : (
