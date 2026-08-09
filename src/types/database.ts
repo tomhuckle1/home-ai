@@ -153,6 +153,8 @@ export type DocumentRow = {
   property_id: string;
   asset_id: string | null;
   room_id: string | null;
+  contractor_id: string | null;
+  supersedes_id: string | null;
   uploaded_by: string | null;
   document_type: DocumentType;
   file_path: string;
@@ -186,6 +188,14 @@ export type DocumentChunkRow = {
   token_count: number | null;
   created_at: string;
 }
+
+export type DocumentAssetRow = {
+  id: string;
+  document_id: string;
+  asset_id: string;
+  created_at: string;
+}
+export type DocumentAssetInsert = Pick<DocumentAssetRow, 'document_id' | 'asset_id'>;
 
 export type ContractorRow = {
   id: string;
@@ -397,6 +407,11 @@ export type Database = {
         Row: DocumentChunkRow;
         Insert: DocumentChunkRow;
         Update: Partial<DocumentChunkRow>;
+      } & NoRelationships;
+      document_assets: {
+        Row: DocumentAssetRow;
+        Insert: DocumentAssetInsert;
+        Update: Partial<DocumentAssetInsert>;
       } & NoRelationships;
       contractors: {
         Row: ContractorRow;
