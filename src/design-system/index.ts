@@ -1,3 +1,4 @@
+export * from './AnimatedCard';
 export * from './Avatar';
 export * from './Badge';
 export * from './Button';
@@ -12,6 +13,8 @@ export * from './QuickAction';
 export * from './RootErrorBoundary';
 export * from './Screen';
 export * from './SectionHeader';
+export * from './Skeleton';
+export * from './StatCard';
 export * from './Text';
 export * from './TextField';
 export * from './Thumbnail';
