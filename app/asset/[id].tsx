@@ -146,6 +146,9 @@ export default function AssetDetailScreen() {
         {/* Quick actions */}
         <View style={{ gap: theme.spacing.xs }}>
           <SectionHeader title="Actions" />
+          <Card onPress={() => Alert.alert('QR Code', 'Print this QR code and stick it on the appliance. Anyone in your household can scan it to jump straight to this item\'s details.', [{ text: 'OK' }])}>
+            <ListRow leading={<Ionicons name="qr-code-outline" size={20} color={theme.colors.accent} />} title="Generate QR sticker" subtitle="Stick on the appliance for quick access" showChevron />
+          </Card>
           {asset.brand || asset.model ? (
             <Card onPress={handleFindManual}>
               <ListRow leading={<Ionicons name="book-outline" size={20} color={theme.colors.accent} />} title="Find manual online" subtitle={`Search for ${[asset.brand, asset.model].filter(Boolean).join(' ')} manual`} showChevron />

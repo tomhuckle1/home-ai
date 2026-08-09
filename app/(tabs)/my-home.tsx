@@ -11,6 +11,7 @@ import { useAllDocuments } from '@/src/hooks/useDocuments';
 import { useProperties } from '@/src/hooks/useProperties';
 import { useRooms } from '@/src/hooks/useRooms';
 import { useInsurancePolicies, useVehicles } from '@/src/hooks/useVehiclesAndInsurance';
+import { policyTypeLabel } from '@/src/lib/display-labels';
 import type { AssetRow, DocumentRow, InsurancePolicyRow, PropertyRow, VehicleRow } from '@/src/types/database';
 
 type ViewMode = 'overview' | 'rooms' | 'documents';
@@ -100,7 +101,7 @@ function OverviewView({ property, refetch, isRefetching }: { property: PropertyR
             <Card key={p.id}>
               <ListRow
                 leading={<Text style={{ fontSize: 18 }}>🔑</Text>}
-                title={`${p.policy_type.replace(/_/g, ' ')}${p.provider ? ` — ${p.provider}` : ''}`}
+                title={`${policyTypeLabel(p.policy_type)}${p.provider ? ` — ${p.provider}` : ''}`}
                 subtitle={p.renewal_date ? `Renews ${p.renewal_date}` : undefined}
                 trailing={expired ? <Badge label="Expired" tone="danger" /> : urgent ? <Badge label={`${days}d`} tone="warning" /> : undefined}
               />
@@ -182,6 +183,9 @@ function OverviewView({ property, refetch, isRefetching }: { property: PropertyR
       {/* Passport */}
       <Card onPress={() => router.push({ pathname: '/energy', params: { propertyId: property.id } })}>
         <ListRow leading={<Ionicons name="flash-outline" size={20} color={theme.colors.accent} />} title="Energy & meters" subtitle="Track electricity, gas, water, and solar" showChevron />
+      </Card>
+      <Card onPress={() => router.push('/moving')}>
+        <ListRow leading={<Ionicons name="swap-horizontal-outline" size={20} color={theme.colors.accent} />} title="Moving house checklist" subtitle="Step-by-step guide for moving in" showChevron />
       </Card>
       <Card onPress={() => router.push(`/passport/${property.id}`)}>
         <ListRow leading={<Ionicons name="ribbon-outline" size={20} color={theme.colors.accent} />} title="Home Passport" subtitle="Generate a shareable property record" showChevron />

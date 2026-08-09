@@ -120,7 +120,7 @@ function QuickStats({ propertyId }: { propertyId: string }) {
         <Text variant="title2">{docCount}</Text>
         <Text variant="caption" color="textSecondary">docs</Text>
       </Pressable>
-      <Pressable accessibilityRole="button" onPress={() => router.push('/(tabs)/index')} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}>
+      <Pressable accessibilityRole="button" onPress={() => {}} style={({ pressed }) => ({ flex: 1, backgroundColor: theme.colors.surfaceAlt, borderRadius: theme.radius.md, padding: theme.spacing.sm, alignItems: 'center', opacity: pressed ? 0.7 : 1 })}>
         <Text variant="title2">{reminderCount}</Text>
         <Text variant="caption" color="textSecondary">reminders</Text>
       </Pressable>
