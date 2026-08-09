@@ -277,6 +277,76 @@ export type TimelineEventInsert = Pick<TimelineEventRow, 'property_id' | 'event_
     Omit<TimelineEventRow, 'id' | 'property_id' | 'event_type' | 'title' | 'event_date' | 'created_at'>
   >;
 
+export type VehicleRow = {
+  id: string;
+  property_id: string;
+  registration: string | null;
+  make: string | null;
+  model: string | null;
+  colour: string | null;
+  year: number | null;
+  mot_expiry: string | null;
+  tax_expiry: string | null;
+  insurance_provider: string | null;
+  insurance_policy_number: string | null;
+  insurance_renewal: string | null;
+  service_due_date: string | null;
+  service_due_mileage: number | null;
+  last_service_mileage: number | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export type VehicleInsert = Pick<VehicleRow, 'property_id'> &
+  Partial<Omit<VehicleRow, 'id' | 'property_id' | 'created_at' | 'updated_at'>>;
+export type VehicleUpdate = Partial<Omit<VehicleRow, 'id' | 'property_id' | 'created_at' | 'updated_at'>>;
+
+export type InsurancePolicyType = 'home_buildings' | 'home_contents' | 'car' | 'life' | 'pet' | 'boiler_cover' | 'gadget' | 'travel' | 'other';
+
+export type InsurancePolicyRow = {
+  id: string;
+  property_id: string;
+  policy_type: InsurancePolicyType;
+  provider: string | null;
+  policy_number: string | null;
+  annual_premium: number | null;
+  excess: number | null;
+  start_date: string | null;
+  renewal_date: string | null;
+  vehicle_id: string | null;
+  document_id: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export type InsurancePolicyInsert = Pick<InsurancePolicyRow, 'property_id' | 'policy_type'> &
+  Partial<Omit<InsurancePolicyRow, 'id' | 'property_id' | 'policy_type' | 'created_at' | 'updated_at'>>;
+
+export type RoomDetailType = 'paint' | 'flooring' | 'tiles' | 'wallpaper' | 'curtains';
+
+export type RoomDetailRow = {
+  id: string;
+  room_id: string;
+  property_id: string;
+  detail_type: RoomDetailType;
+  colour_name: string | null;
+  colour_code: string | null;
+  brand: string | null;
+  finish: string | null;
+  material: string | null;
+  supplier: string | null;
+  quantity: string | null;
+  photo_path: string | null;
+  notes: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+export type RoomDetailInsert = Pick<RoomDetailRow, 'room_id' | 'property_id' | 'detail_type'> &
+  Partial<Omit<RoomDetailRow, 'id' | 'room_id' | 'property_id' | 'detail_type' | 'created_at' | 'updated_at'>>;
+
 export type HomeHealthScoreRow = {
   id: string;
   property_id: string;
