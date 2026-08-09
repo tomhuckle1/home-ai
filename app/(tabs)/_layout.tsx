@@ -84,7 +84,7 @@ export default function TabsLayout() {
         listeners={{
           tabPress: (e) => {
             e.preventDefault();
-            startScan(properties);
+            router.push('/add');
           },
         }}
       />

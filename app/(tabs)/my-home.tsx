@@ -1,7 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, View } from 'react-native';
 
 import { Badge, Button, Card, ChipSelect, EmptyState, ListRow, Screen, SectionHeader, SkeletonList, Text, TextField, Thumbnail, useTheme } from '@/src/design-system';
 import { useAssetsByProperty } from '@/src/hooks/useAssets';
@@ -10,28 +10,26 @@ import { usePropertyAssets, usePropertyDocuments } from '@/src/hooks/useDocument
 import { useAllDocuments } from '@/src/hooks/useDocuments';
 import { useProperties } from '@/src/hooks/useProperties';
 import { useRooms } from '@/src/hooks/useRooms';
-import { useTimeline } from '@/src/hooks/useTimeline';
-import { TIMELINE_EVENT_ICON } from '@/src/lib/timeline-icons';
-import type { DocumentRow, DocumentType, ExtractionStatus, PropertyRow, TimelineEventRow } from '@/src/types/database';
+import { useInsurancePolicies, useVehicles } from '@/src/hooks/useVehiclesAndInsurance';
+import type { AssetRow, DocumentRow, InsurancePolicyRow, PropertyRow, VehicleRow } from '@/src/types/database';
 
-type ViewMode = 'rooms' | 'documents' | 'timeline';
-
+type ViewMode = 'overview' | 'rooms' | 'documents';
 const VIEW_OPTIONS: { value: ViewMode; label: string }[] = [
-  { value: 'rooms', label: 'Rooms & items' },
+  { value: 'overview', label: 'Overview' },
+  { value: 'rooms', label: 'By room' },
   { value: 'documents', label: 'Documents' },
-  { value: 'timeline', label: 'Timeline' },
 ];
 
 export default function MyHomeScreen() {
   const theme = useTheme();
   const { data: properties, isLoading, refetch, isRefetching } = useProperties();
   const property = properties?.[0];
-  const [view, setView] = useState<ViewMode>('rooms');
+  const [view, setView] = useState<ViewMode>('overview');
 
-  if (isLoading) return (<Screen edges={['top']}><View style={{ paddingVertical: theme.spacing.md }}><Text variant="largeTitle">My home</Text></View><SkeletonList count={3} /></Screen>);
+  if (isLoading) return (<Screen edges={['top']}><View style={{ paddingVertical: theme.spacing.md }}><Text variant="largeTitle">My home</Text></View><SkeletonList count={4} /></Screen>);
 
   if (!property) {
-    return (<Screen edges={['top']} style={{ justifyContent: 'center' }}><EmptyState icon="🏠" title="No property yet" description="Add your property to start building its record." actionLabel="Add property" onAction={() => router.push('/property/new')} /></Screen>);
+    return (<Screen edges={['top']} style={{ justifyContent: 'center' }}><EmptyState icon="🏠" title="No property yet" description="Add your property to get started." actionLabel="Add property" onAction={() => router.push('/property/new')} /></Screen>);
   }
 
   return (
@@ -48,25 +46,152 @@ export default function MyHomeScreen() {
         </View>
       </View>
       <View style={{ paddingBottom: theme.spacing.sm }}>
-        <ChipSelect options={VIEW_OPTIONS} value={view} onChange={(v) => setView(v ?? 'rooms')} allowDeselect={false} />
+        <ChipSelect options={VIEW_OPTIONS} value={view} onChange={(v) => setView(v ?? 'overview')} allowDeselect={false} />
       </View>
+      {view === 'overview' ? <OverviewView property={property} refetch={refetch} isRefetching={isRefetching} /> : null}
       {view === 'rooms' ? <RoomsView property={property} refetch={refetch} isRefetching={isRefetching} /> : null}
-      {view === 'documents' ? <DocumentsView property={property} /> : null}
-      {view === 'timeline' ? <TimelineView property={property} /> : null}
+      {view === 'documents' ? <DocumentsView /> : null}
     </Screen>
   );
 }
 
-/* ── Rooms view with property-level assets and docs ───────────────── */
+/* ── Overview — category-based browsing ───────────────────────────── */
+
+function OverviewView({ property, refetch, isRefetching }: { property: PropertyRow; refetch: () => void; isRefetching: boolean }) {
+  const theme = useTheme();
+  const { data: allAssets } = useAssetsByProperty(property.id);
+  const { data: insurance } = useInsurancePolicies(property.id);
+  const { data: vehicles } = useVehicles(property.id);
+  const { data: propertyDocs } = usePropertyDocuments(property.id);
+  const { data: contractors } = useContractors(property.id);
+
+  const groupedAssets = groupAssetsByCategory(allAssets ?? []);
+  const categoryOrder = ['heating', 'security', 'appliance', 'electrical', 'plumbing', 'structural', 'furniture', 'garden', 'other'];
+
+  const daysUntil = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+  };
+
+  return (
+    <ScrollView contentContainerStyle={{ paddingBottom: theme.spacing.xxl, gap: theme.spacing.lg }} refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.colors.accent} />}>
+      {/* Property details */}
+      <Card onPress={() => router.push({ pathname: '/property/edit', params: { id: property.id } })}>
+        <ListRow
+          leading={<Ionicons name="home-outline" size={20} color={theme.colors.textSecondary} />}
+          title="Property details"
+          subtitle={[property.property_type?.replace(/_/g, ' '), property.bedrooms ? `${property.bedrooms} bed` : null, property.epc_rating ? `EPC ${property.epc_rating}` : null].filter(Boolean).join(' · ') || 'Tap to add details'}
+          showChevron
+        />
+      </Card>
+
+      {/* Insurance & policies */}
+      <View style={{ gap: theme.spacing.xs }}>
+        <SectionHeader title="Insurance & policies" actionLabel="Add" onAction={() => router.push({ pathname: '/add/insurance', params: { propertyId: property.id } })} />
+        {(!insurance || insurance.length === 0) ? (
+          <Card onPress={() => router.push({ pathname: '/add/insurance', params: { propertyId: property.id } })}>
+            <ListRow leading={<Text style={{ fontSize: 20 }}>🔑</Text>} title="Add your insurance" subtitle="Track renewals and never miss a deadline" showChevron />
+          </Card>
+        ) : insurance.map((p) => {
+          const days = daysUntil(p.renewal_date);
+          const urgent = days !== null && days < 30 && days >= 0;
+          const expired = days !== null && days < 0;
+          return (
+            <Card key={p.id}>
+              <ListRow
+                leading={<Text style={{ fontSize: 18 }}>🔑</Text>}
+                title={`${p.policy_type.replace(/_/g, ' ')}${p.provider ? ` — ${p.provider}` : ''}`}
+                subtitle={p.renewal_date ? `Renews ${p.renewal_date}` : undefined}
+                trailing={expired ? <Badge label="Expired" tone="danger" /> : urgent ? <Badge label={`${days}d`} tone="warning" /> : undefined}
+              />
+            </Card>
+          );
+        })}
+      </View>
+
+      {/* Vehicles */}
+      <View style={{ gap: theme.spacing.xs }}>
+        <SectionHeader title="Vehicles" actionLabel="Add" onAction={() => router.push({ pathname: '/add/vehicle', params: { propertyId: property.id } })} />
+        {(!vehicles || vehicles.length === 0) ? (
+          <Card onPress={() => router.push({ pathname: '/add/vehicle', params: { propertyId: property.id } })}>
+            <ListRow leading={<Text style={{ fontSize: 20 }}>🚗</Text>} title="Add your vehicle" subtitle="Track MOT, tax, insurance, and service dates" showChevron />
+          </Card>
+        ) : vehicles.map((v) => {
+          const motDays = daysUntil(v.mot_expiry);
+          const taxDays = daysUntil(v.tax_expiry);
+          const urgentMot = motDays !== null && motDays < 30;
+          const urgentTax = taxDays !== null && taxDays < 30;
+          return (
+            <Card key={v.id}>
+              <ListRow
+                leading={<Text style={{ fontSize: 18 }}>🚗</Text>}
+                title={[v.make, v.model].filter(Boolean).join(' ') || v.registration || 'Vehicle'}
+                subtitle={v.registration ?? undefined}
+                trailing={urgentMot ? <Badge label={`MOT ${motDays}d`} tone={motDays! < 0 ? 'danger' : 'warning'} /> : urgentTax ? <Badge label={`Tax ${taxDays}d`} tone={taxDays! < 0 ? 'danger' : 'warning'} /> : undefined}
+              />
+            </Card>
+          );
+        })}
+      </View>
+
+      {/* Assets by category */}
+      {categoryOrder.map((cat) => {
+        const items = groupedAssets[cat];
+        if (!items || items.length === 0) return null;
+        return (
+          <View key={cat} style={{ gap: theme.spacing.xs }}>
+            <SectionHeader title={categoryLabel(cat)} />
+            {items.slice(0, 5).map((a) => (
+              <Card key={a.id}>
+                <ListRow
+                  leading={a.primary_photo_path ? <Thumbnail bucket="documents" path={a.primary_photo_path} size={36} /> : <Text style={{ fontSize: 18 }}>{categoryIcon(cat)}</Text>}
+                  title={a.name}
+                  subtitle={[a.brand, a.model].filter(Boolean).join(' · ') || undefined}
+                  showChevron
+                  onPress={() => router.push(`/asset/${a.id}`)}
+                />
+              </Card>
+            ))}
+            {items.length > 5 ? <Text variant="footnote" color="textSecondary">+{items.length - 5} more</Text> : null}
+          </View>
+        );
+      })}
+
+      {/* Property documents */}
+      {propertyDocs && propertyDocs.length > 0 ? (
+        <View style={{ gap: theme.spacing.xs }}>
+          <SectionHeader title="Property documents" />
+          {propertyDocs.slice(0, 3).map((doc) => (
+            <Card key={doc.id}>
+              <ListRow title={doc.product_description || doc.document_type.replace(/_/g, ' ')} subtitle={doc.supplier ?? doc.document_date ?? undefined} showChevron onPress={() => router.push(`/document/${doc.id}`)} />
+            </Card>
+          ))}
+        </View>
+      ) : null}
+
+      {/* Contractors */}
+      {contractors && contractors.length > 0 ? (
+        <View style={{ gap: theme.spacing.xs }}>
+          <SectionHeader title="Contractors" actionLabel="Manage" onAction={() => router.push({ pathname: '/contractor', params: { propertyId: property.id } })} />
+          {contractors.slice(0, 3).map((c) => (
+            <Card key={c.id}><ListRow title={c.name} subtitle={c.trade ?? undefined} showChevron onPress={() => router.push(`/contractor/${c.id}`)} /></Card>
+          ))}
+        </View>
+      ) : null}
+
+      {/* Passport */}
+      <Card onPress={() => router.push(`/passport/${property.id}`)}>
+        <ListRow leading={<Ionicons name="ribbon-outline" size={20} color={theme.colors.accent} />} title="Home Passport" subtitle="Generate a shareable property record" showChevron />
+      </Card>
+    </ScrollView>
+  );
+}
+
+/* ── Rooms view ───────────────────────────────────────────────────── */
 
 function RoomsView({ property, refetch, isRefetching }: { property: PropertyRow; refetch: () => void; isRefetching: boolean }) {
   const theme = useTheme();
   const { data: rooms, isLoading } = useRooms(property.id);
-  const { data: contractors } = useContractors(property.id);
-  const { data: propertyAssets } = usePropertyAssets(property.id);
-  const { data: propertyDocs } = usePropertyDocuments(property.id);
-  const roomCount = rooms?.length ?? 0;
-  const contractorCount = contractors?.length ?? 0;
 
   if (isLoading) return <SkeletonList count={3} />;
 
@@ -77,66 +202,12 @@ function RoomsView({ property, refetch, isRefetching }: { property: PropertyRow;
       contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xxl }}
       refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={theme.colors.accent} />}
       ListHeaderComponent={
-        <View style={{ gap: theme.spacing.sm }}>
-          {/* Property-level assets (structural, no room) */}
-          {propertyAssets && propertyAssets.length > 0 ? (
-            <View style={{ gap: theme.spacing.xs }}>
-              <SectionHeader title="Property" actionLabel="Add" onAction={() => router.push({ pathname: '/asset/new', params: { propertyId: property.id } })} />
-              {propertyAssets.map((a) => (
-                <Card key={a.id}>
-                  <ListRow
-                    leading={<View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}><Ionicons name="cube-outline" size={18} color={theme.colors.textSecondary} /></View>}
-                    title={a.name}
-                    subtitle={[a.brand, a.model, a.warranty_expiry ? `Warranty ${new Date(a.warranty_expiry) > new Date() ? 'active' : 'expired'}` : null].filter(Boolean).join(' · ') || a.category}
-                    showChevron
-                    onPress={() => router.push(`/asset/${a.id}`)}
-                  />
-                </Card>
-              ))}
-            </View>
-          ) : (
-            <Card onPress={() => router.push({ pathname: '/asset/new', params: { propertyId: property.id } })}>
-              <ListRow leading={<Ionicons name="cube-outline" size={20} color={theme.colors.textTertiary} />} title="Add property-level items" subtitle="Roof, boiler, wiring, alarm, solar panels" showChevron />
-            </Card>
-          )}
-
-          {/* Property-level documents (insurance, EPC, mortgage) */}
-          {propertyDocs && propertyDocs.length > 0 ? (
-            <View style={{ gap: theme.spacing.xs }}>
-              <SectionHeader title="Property documents" />
-              {propertyDocs.slice(0, 4).map((doc) => (
-                <Card key={doc.id}>
-                  <ListRow
-                    leading={<View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}><Ionicons name={docIconFor(doc.document_type)} size={16} color={theme.colors.textSecondary} /></View>}
-                    title={doc.product_description || doc.document_type.replace(/_/g, ' ')}
-                    subtitle={doc.expiry_date ? (new Date(doc.expiry_date) < new Date() ? `Expired ${doc.expiry_date}` : `Expires ${doc.expiry_date}`) : (doc.document_date ?? undefined)}
-                    trailing={doc.expiry_date && new Date(doc.expiry_date) < new Date() ? <Badge label="Expired" tone="danger" /> : undefined}
-                    showChevron
-                    onPress={() => router.push(`/document/${doc.id}`)}
-                  />
-                </Card>
-              ))}
-            </View>
-          ) : null}
-
-          {/* Edit property */}
-          <Card onPress={() => router.push({ pathname: '/property/edit', params: { id: property.id } })}>
-            <ListRow
-              leading={<Ionicons name="create-outline" size={20} color={theme.colors.textSecondary} />}
-              title="Edit property details"
-              subtitle={[property.property_type?.replace(/_/g, ' '), property.bedrooms ? `${property.bedrooms} bed` : null, property.epc_rating ? `EPC ${property.epc_rating}` : null].filter(Boolean).join(' · ') || 'Add bedrooms, year built, EPC'}
-              showChevron
-            />
-          </Card>
-
-          {/* Rooms header */}
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: theme.spacing.sm }}>
-            <Text variant="headline">{roomCount} room{roomCount === 1 ? '' : 's'}</Text>
-            <Button label="Add room" variant="ghost" fullWidth={false} onPress={() => router.push({ pathname: '/room/new', params: { propertyId: property.id } })} />
-          </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Text variant="headline">{(rooms?.length ?? 0)} room{(rooms?.length ?? 0) === 1 ? '' : 's'}</Text>
+          <Button label="Add room" variant="ghost" fullWidth={false} onPress={() => router.push({ pathname: '/room/new', params: { propertyId: property.id } })} />
         </View>
       }
-      ListEmptyComponent={<EmptyState icon="🚪" title="No rooms yet" description="Add your first room to start recording what's in it." actionLabel="Add a room" onAction={() => router.push({ pathname: '/room/new', params: { propertyId: property.id } })} />}
+      ListEmptyComponent={<EmptyState icon="🚪" title="No rooms yet" description="Rooms are optional — you can also browse everything by category in the Overview tab." actionLabel="Add a room" onAction={() => router.push({ pathname: '/room/new', params: { propertyId: property.id } })} />}
       renderItem={({ item }) => (
         <Card>
           <ListRow
@@ -148,107 +219,58 @@ function RoomsView({ property, refetch, isRefetching }: { property: PropertyRow;
           />
         </Card>
       )}
-      ListFooterComponent={
-        <View style={{ gap: theme.spacing.sm, marginTop: theme.spacing.lg }}>
-          <SectionHeader title={`Contractors${contractorCount > 0 ? ` (${contractorCount})` : ''}`} actionLabel="Manage" onAction={() => router.push({ pathname: '/contractor', params: { propertyId: property.id } })} />
-          {contractorCount === 0 ? (
-            <Card onPress={() => router.push({ pathname: '/contractor/new', params: { propertyId: property.id } })}><ListRow leading={<Ionicons name="construct-outline" size={20} color={theme.colors.textTertiary} />} title="Save your tradespeople" subtitle="Plumbers, electricians, builders" showChevron /></Card>
-          ) : contractors?.slice(0, 3).map((c) => (
-            <Card key={c.id}><ListRow title={c.name} subtitle={c.trade ?? undefined} showChevron onPress={() => router.push(`/contractor/${c.id}`)} /></Card>
-          ))}
-          <Card onPress={() => router.push(`/passport/${property.id}`)}>
-            <ListRow leading={<Ionicons name="ribbon-outline" size={20} color={theme.colors.accent} />} title="Home Passport" subtitle="Generate a shareable property record" showChevron />
-          </Card>
-        </View>
-      }
     />
   );
 }
 
 /* ── Documents view ───────────────────────────────────────────────── */
 
-function statusBadge(status: ExtractionStatus) {
-  if (status === 'completed') return null;
-  if (status === 'failed') return <Badge label="Needs info" tone="warning" />;
-  return <Badge label="Reading…" tone="neutral" />;
-}
-
-function DocumentsView({ property }: { property: PropertyRow }) {
+function DocumentsView() {
   const theme = useTheme();
   const [search, setSearch] = useState('');
   const { data: documents, isLoading, refetch, isRefetching } = useAllDocuments(search);
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ paddingBottom: theme.spacing.sm }}><TextField placeholder="Search by supplier, brand, product…" value={search} onChangeText={setSearch} autoCapitalize="none" /></View>
+      <View style={{ paddingBottom: theme.spacing.sm }}><TextField placeholder="Search documents…" value={search} onChangeText={setSearch} autoCapitalize="none" /></View>
       {isLoading ? <ActivityIndicator /> : (
         <FlatList
           data={documents ?? []}
           keyExtractor={(item) => item.id}
           contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xxl }}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={theme.colors.accent} />}
-          ListEmptyComponent={<EmptyState icon="📄" title={search ? 'No matches' : 'No documents yet'} description={search ? 'Try a different search term.' : 'Tap the + button to scan a receipt, manual or warranty.'} />}
-          renderItem={({ item }: { item: DocumentRow }) => {
-            const isExpired = item.expiry_date && new Date(item.expiry_date) < new Date();
-            return (
-              <Card style={isExpired ? { opacity: 0.6 } : undefined}>
-                <ListRow
-                  leading={<View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}><Ionicons name={docIconFor(item.document_type)} size={18} color={theme.colors.textSecondary} /></View>}
-                  title={item.product_description || item.original_filename || item.document_type.replace(/_/g, ' ')}
-                  subtitle={[item.supplier, item.document_date, isExpired ? 'Expired' : null].filter(Boolean).join(' · ') || item.document_type.replace(/_/g, ' ')}
-                  trailing={statusBadge(item.extraction_status)}
-                  showChevron
-                  onPress={() => router.push(`/document/${item.id}`)}
-                />
-              </Card>
-            );
-          }}
+          ListEmptyComponent={<EmptyState icon="📄" title={search ? 'No matches' : 'No documents yet'} description={search ? 'Try a different search.' : 'Tap + to scan or upload a document.'} />}
+          renderItem={({ item }: { item: DocumentRow }) => (
+            <Card>
+              <ListRow title={item.product_description || item.document_type.replace(/_/g, ' ')} subtitle={item.supplier ?? item.document_date ?? undefined} showChevron onPress={() => router.push(`/document/${item.id}`)} />
+            </Card>
+          )}
         />
       )}
     </View>
   );
 }
 
-/* ── Timeline view ────────────────────────────────────────────────── */
+/* ── Helpers ──────────────────────────────────────────────────────── */
 
-function TimelineView({ property }: { property: PropertyRow }) {
-  const theme = useTheme();
-  const { data: events, isLoading, refetch, isRefetching } = useTimeline(property.id);
+function groupAssetsByCategory(assets: AssetRow[]): Record<string, AssetRow[]> {
+  const groups: Record<string, AssetRow[]> = {};
+  for (const a of assets) {
+    if (a.status !== 'active') continue;
+    if (!groups[a.category]) groups[a.category] = [];
+    groups[a.category].push(a);
+  }
+  return groups;
+}
 
-  if (isLoading) return <SkeletonList count={3} />;
+function categoryLabel(cat: string): string {
+  const labels: Record<string, string> = { heating: 'Heating & hot water', security: 'Safety & security', appliance: 'Appliances', electrical: 'Electrics & technology', plumbing: 'Plumbing', structural: 'Structure & exterior', furniture: 'Furniture', garden: 'Garden & outdoor', other: 'Other items' };
+  return labels[cat] ?? cat;
+}
 
-  const sorted = [...(events ?? [])].sort((a, b) => b.event_date.localeCompare(a.event_date));
-  const totalCost = sorted.reduce((sum, e) => sum + (e.cost ?? 0), 0);
-
-  return (
-    <FlatList
-      data={sorted}
-      keyExtractor={(item) => item.id}
-      contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xxl }}
-      refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={theme.colors.accent} />}
-      ListHeaderComponent={sorted.length > 0 ? (
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text variant="footnote" color="textSecondary">{sorted.length} event{sorted.length === 1 ? '' : 's'}{totalCost > 0 ? ` · £${Math.round(totalCost).toLocaleString()}` : ''}</Text>
-          <Button label="Add" variant="ghost" fullWidth={false} onPress={() => router.push({ pathname: '/timeline/new', params: { propertyId: property.id } })} />
-        </View>
-      ) : null}
-      ListEmptyComponent={<EmptyState icon="🕓" title="No history yet" description="Your property's history builds itself as you add rooms, items and documents." actionLabel="Add a past event" onAction={() => router.push({ pathname: '/timeline/new', params: { propertyId: property.id } })} />}
-      renderItem={({ item }: { item: TimelineEventRow }) => {
-        const hasCost = item.cost != null && item.cost > 0;
-        return (
-          <Card>
-            <ListRow
-              leading={<View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}><Text style={{ fontSize: 18, lineHeight: 22 }}>{TIMELINE_EVENT_ICON[item.event_type]}</Text></View>}
-              title={item.title}
-              subtitle={[item.event_date, hasCost ? `£${item.cost}` : null].filter(Boolean).join(' · ') || undefined}
-              showChevron
-              onPress={() => router.push(`/timeline/${item.id}`)}
-            />
-          </Card>
-        );
-      }}
-    />
-  );
+function categoryIcon(cat: string): string {
+  const icons: Record<string, string> = { heating: '🔥', security: '🛡️', appliance: '📦', electrical: '⚡', plumbing: '🚿', structural: '🏗️', furniture: '🛋️', garden: '🌳', other: '📦' };
+  return icons[cat] ?? '📦';
 }
 
 function roomIcon(roomType: string | null): keyof typeof Ionicons.glyphMap {
@@ -258,13 +280,4 @@ function roomIcon(roomType: string | null): keyof typeof Ionicons.glyphMap {
     case 'hallway': return 'enter-outline'; case 'loft': return 'arrow-up-outline'; case 'exterior': return 'sunny-outline';
     default: return 'cube-outline';
   }
-}
-
-function docIconFor(type: DocumentType): keyof typeof Ionicons.glyphMap {
-  const map: Partial<Record<DocumentType, keyof typeof Ionicons.glyphMap>> = {
-    receipt: 'receipt-outline', manual: 'book-outline', warranty: 'shield-checkmark-outline',
-    certificate: 'ribbon-outline', invoice: 'document-text-outline', insurance_policy: 'umbrella-outline',
-    epc: 'leaf-outline', gas_safety_record: 'flame-outline', mortgage_document: 'home-outline',
-  };
-  return map[type] ?? 'document-outline';
 }
