@@ -1,122 +1,161 @@
-import * as Linking from 'expo-linking';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Alert, ScrollView, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
 
-import { Button, Card, Screen, Text, TextField, useTheme } from '@/src/design-system';
-import { useContractor, useDeleteContractor, useUpdateContractor } from '@/src/hooks/useContractors';
+import { Badge, Button, Card, ChipSelect, EmptyState, ListRow, Screen, SectionHeader, Text, Thumbnail, useTheme } from '@/src/design-system';
+import { useAssetsByRoom } from '@/src/hooks/useAssets';
+import { useDocumentsByRoom } from '@/src/hooks/useDocumentLinks';
+import { useDeleteRoom, useRoom, useUpdateRoom } from '@/src/hooks/useRooms';
+import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
+import type { DocumentType } from '@/src/types/database';
 
-export default function ContractorDetailScreen() {
+const FLOOR_OPTIONS = [
+  { value: 'Basement', label: 'Basement' },
+  { value: 'Ground', label: 'Ground' },
+  { value: 'First', label: 'First' },
+  { value: 'Second', label: 'Second' },
+  { value: 'Attic', label: 'Attic' },
+];
+
+function docIcon(type: DocumentType): keyof typeof Ionicons.glyphMap {
+  const map: Partial<Record<DocumentType, keyof typeof Ionicons.glyphMap>> = { receipt: 'receipt-outline', manual: 'book-outline', warranty: 'shield-checkmark-outline', certificate: 'ribbon-outline', invoice: 'document-text-outline' };
+  return map[type] ?? 'document-outline';
+}
+
+export default function RoomDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const theme = useTheme();
-  const { data: contractor } = useContractor(id);
-  const updateContractor = useUpdateContractor();
-  const deleteContractor = useDeleteContractor();
-  const [editing, setEditing] = useState(false);
+  const { data: room } = useRoom(id);
+  const { data: assets, isLoading } = useAssetsByRoom(id);
+  const { data: roomDocs } = useDocumentsByRoom(id);
+  const deleteRoom = useDeleteRoom();
+  const updateRoom = useUpdateRoom();
+  const [showPrevious, setShowPrevious] = useState(false);
 
-  const [name, setName] = useState(contractor?.name ?? '');
-  const [trade, setTrade] = useState(contractor?.trade ?? '');
-  const [phone, setPhone] = useState(contractor?.phone ?? '');
-  const [email, setEmail] = useState(contractor?.email ?? '');
-  const [website, setWebsite] = useState(contractor?.website ?? '');
-  const [notes, setNotes] = useState(contractor?.notes ?? '');
-  const [error, setError] = useState<string | null>(null);
-
-  if (!contractor) return null;
-
-  async function handleSave() {
-    setError(null);
-    try {
-      await updateContractor.mutateAsync({
-        id,
-        update: {
-          name: name.trim(),
-          trade: trade.trim() || null,
-          phone: phone.trim() || null,
-          email: email.trim() || null,
-          website: website.trim() || null,
-          notes: notes.trim() || null,
-        },
-      });
-      setEditing(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save changes.');
-    }
-  }
+  const activeAssets = (assets ?? []).filter((a) => a.status === 'active');
+  const previousAssets = (assets ?? []).filter((a) => a.status !== 'active');
 
   function handleDelete() {
-    Alert.alert(`Delete "${contractor!.name}"?`, 'This cannot be undone.', [
+    if (!room) return;
+    Alert.alert(`Delete "${room.name}"?`, 'This cannot be undone.', [
       { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: () => {
-          deleteContractor.mutate(
-            { id: contractor!.id, property_id: contractor!.property_id },
-            {
-              onSuccess: () => router.back(),
-              onError: (err) => Alert.alert('Error', err instanceof Error ? err.message : 'Please try again.'),
-            },
-          );
-        },
-      },
+      { text: 'Delete', style: 'destructive', onPress: () => { deleteRoom.mutate({ id: room.id, property_id: room.property_id }, { onSuccess: () => router.back(), onError: (err) => Alert.alert('Error', err instanceof Error ? err.message : 'Please try again.') }); } },
     ]);
   }
 
-  if (editing) {
-    return (
-      <Screen edges={['bottom']}>
-        <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
-          <Text variant="title1">Edit contractor</Text>
-          <View style={{ gap: theme.spacing.sm }}>
-            <TextField label="Name" value={name} onChangeText={setName} />
-            <TextField label="Trade" value={trade} onChangeText={setTrade} />
-            <TextField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-            <TextField label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-            <TextField label="Website" value={website} onChangeText={setWebsite} autoCapitalize="none" />
-            <TextField label="Notes" value={notes} onChangeText={setNotes} multiline numberOfLines={3} />
-          </View>
-          {error ? <Text variant="footnote" color="danger">{error}</Text> : null}
-          <Button label="Save changes" onPress={handleSave} loading={updateContractor.isPending} />
-          <Button label="Cancel" variant="ghost" onPress={() => setEditing(false)} />
-        </ScrollView>
-      </Screen>
-    );
+  function handleSetFloor(floor: string | undefined) {
+    if (!room) return;
+    updateRoom.mutate({ id: room.id, update: { floor: floor ?? null } });
   }
 
   return (
     <Screen edges={['bottom']}>
-      <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
-        <Text variant="title1">{contractor.name}</Text>
-
-        <Card>
-          <View style={{ gap: theme.spacing.sm }}>
-            {contractor.trade ? <Field label="Trade" value={contractor.trade} /> : null}
-            {contractor.phone ? (
-              <Field label="Phone" value={contractor.phone} onPress={() => Linking.openURL(`tel:${contractor.phone}`)} />
-            ) : null}
-            {contractor.email ? (
-              <Field label="Email" value={contractor.email} onPress={() => Linking.openURL(`mailto:${contractor.email}`)} />
-            ) : null}
-            {contractor.website ? (
-              <Field label="Website" value={contractor.website} onPress={() => Linking.openURL(contractor.website!)} />
-            ) : null}
-            {contractor.notes ? <Field label="Notes" value={contractor.notes} /> : null}
+      <View style={{ paddingVertical: theme.spacing.md, gap: theme.spacing.md }}>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <View>
+            <Text variant="title1">{room?.name ?? 'Room'}</Text>
+            {room?.floor ? <Text variant="footnote" color="textSecondary">{room.floor} floor</Text> : null}
           </View>
-        </Card>
+          {room && !room.floor ? (
+            <Pressable accessibilityRole="button" onPress={() => {
+              Alert.alert('Which floor?', undefined, [
+                ...FLOOR_OPTIONS.map((f) => ({ text: f.label, onPress: () => handleSetFloor(f.value) })),
+                { text: 'Cancel', style: 'cancel' as const },
+              ]);
+            }}>
+              <Text variant="footnote" color="accent">Set floor</Text>
+            </Pressable>
+          ) : null}
+        </View>
 
-        <Button label="Edit" variant="secondary" onPress={() => setEditing(true)} />
-        <Button label="Delete contractor" variant="danger" onPress={handleDelete} loading={deleteContractor.isPending} />
-      </ScrollView>
+        <View style={{ flexDirection: 'row', gap: theme.spacing.sm }}>
+          <View style={{ flex: 1 }}>
+            <Button label="Scan a label" variant="secondary" onPress={() => router.push({ pathname: '/capture/scan', params: { propertyId: room?.property_id, roomId: id, mode: 'asset' } })} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Button label="Add manually" onPress={() => router.push({ pathname: '/asset/new', params: { propertyId: room?.property_id, roomId: id } })} />
+          </View>
+        </View>
+      </View>
+
+      {isLoading ? (
+        <ActivityIndicator />
+      ) : (
+        <FlatList
+          data={activeAssets}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={{ gap: theme.spacing.sm, paddingBottom: theme.spacing.xxl }}
+          ListEmptyComponent={
+            <EmptyState icon="📦" title="Nothing recorded here yet" description="Photograph an appliance label and Home Memory will read the brand, model and serial number for you." />
+          }
+          renderItem={({ item }) => (
+            <Card>
+              <ListRow
+                leading={item.primary_photo_path ? <Thumbnail bucket="documents" path={item.primary_photo_path} /> : <Text style={{ fontSize: 24, lineHeight: 28 }}>📦</Text>}
+                title={item.name}
+                subtitle={[item.brand, item.model].filter(Boolean).join(' · ') || undefined}
+                trailing={item.warranty_expiry && new Date(item.warranty_expiry) > new Date() ? <Badge label="Under warranty" tone="accent" /> : undefined}
+                showChevron
+                onPress={() => router.push(`/asset/${item.id}`)}
+              />
+            </Card>
+          )}
+          ListFooterComponent={
+            <View style={{ gap: theme.spacing.lg, marginTop: theme.spacing.lg }}>
+              {/* Room documents */}
+              {roomDocs && roomDocs.length > 0 ? (
+                <View style={{ gap: theme.spacing.xs }}>
+                  <SectionHeader title={`Room documents (${roomDocs.length})`} />
+                  {roomDocs.map((doc) => (
+                    <Card key={doc.id}>
+                      <ListRow
+                        leading={<View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.surfaceAlt, alignItems: 'center', justifyContent: 'center' }}><Ionicons name={docIcon(doc.document_type)} size={16} color={theme.colors.textSecondary} /></View>}
+                        title={doc.product_description || doc.document_type.replace(/_/g, ' ')}
+                        subtitle={doc.supplier ?? undefined}
+                        showChevron
+                        onPress={() => router.push(`/document/${doc.id}`)}
+                      />
+                    </Card>
+                  ))}
+                </View>
+              ) : null}
+
+              {/* Previous items */}
+              {previousAssets.length > 0 ? (
+                <View style={{ gap: theme.spacing.xs }}>
+                  <Pressable accessibilityRole="button" onPress={() => setShowPrevious(!showPrevious)}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.xs }}>
+                      <Text variant="headline" color="textSecondary">Previous items ({previousAssets.length})</Text>
+                      <Ionicons name={showPrevious ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.textTertiary} />
+                    </View>
+                  </Pressable>
+                  {showPrevious ? previousAssets.map((item) => (
+                    <Card key={item.id}>
+                      <ListRow
+                        title={item.name}
+                        subtitle={[item.brand, item.status].filter(Boolean).join(' · ')}
+                        trailing={<Badge label={item.status} tone="neutral" />}
+                        showChevron
+                        onPress={() => router.push(`/asset/${item.id}`)}
+                      />
+                    </Card>
+                  )) : null}
+                </View>
+              ) : null}
+
+              {/* Delete room */}
+              {room ? (
+                isWithinDeleteWindow(room.created_at) ? (
+                  <Button label="Delete room" variant="danger" onPress={handleDelete} loading={deleteRoom.isPending} />
+                ) : (
+                  <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>Past the 30-minute deletion window.</Text>
+                )
+              ) : null}
+            </View>
+          }
+        />
+      )}
     </Screen>
-  );
-}
-
-function Field({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
-  return (
-    <View style={{ gap: 2 }}>
-      <Text variant="caption" color="textTertiary">{label.toUpperCase()}</Text>
-      <Text variant="body" color={onPress ? 'accent' : 'textPrimary'} onPress={onPress}>{value}</Text>
-    </View>
   );
 }

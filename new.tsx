@@ -2,57 +2,71 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Button, Screen, Text, TextField, useTheme } from '@/src/design-system';
-import { useCreateContractor } from '@/src/hooks/useContractors';
+import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { useCreateRoom } from '@/src/hooks/useRooms';
 
-export default function NewContractorScreen() {
+const ROOM_TYPES = [
+  'Kitchen', 'Bathroom', 'Bedroom', 'Living room', 'Dining room',
+  'Garden', 'Garage', 'Hallway', 'Utility room', 'Office',
+  'Loft', 'Exterior', 'Other',
+].map((type) => ({ value: type, label: type }));
+
+const FLOORS = [
+  { value: 'Basement', label: 'Basement' },
+  { value: 'Ground', label: 'Ground' },
+  { value: 'First', label: 'First' },
+  { value: 'Second', label: 'Second' },
+  { value: 'Third', label: 'Third' },
+  { value: 'Attic', label: 'Attic' },
+];
+
+export default function NewRoomScreen() {
   const { propertyId } = useLocalSearchParams<{ propertyId: string }>();
   const theme = useTheme();
-  const createContractor = useCreateContractor();
+  const createRoom = useCreateRoom();
 
   const [name, setName] = useState('');
-  const [trade, setTrade] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [website, setWebsite] = useState('');
-  const [notes, setNotes] = useState('');
+  const [roomType, setRoomType] = useState<string | undefined>();
+  const [floor, setFloor] = useState<string | undefined>();
   const [error, setError] = useState<string | null>(null);
 
   async function handleSave() {
     setError(null);
     try {
-      await createContractor.mutateAsync({
+      const room = await createRoom.mutateAsync({
         property_id: propertyId,
         name: name.trim(),
-        trade: trade.trim() || null,
-        phone: phone.trim() || null,
-        email: email.trim() || null,
-        website: website.trim() || null,
-        notes: notes.trim() || null,
+        room_type: roomType ?? null,
+        floor: floor ?? null,
       });
-      router.back();
+      router.replace(`/room/${room.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not save this contractor.');
+      setError(err instanceof Error ? err.message : 'Could not save this room.');
     }
   }
 
   return (
     <Screen edges={['bottom']}>
       <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
-        <Text variant="title1">Add contractor</Text>
+        <View style={{ gap: theme.spacing.xs }}>
+          <Text variant="footnote" color="textSecondary">Room type</Text>
+          <ChipSelect
+            options={ROOM_TYPES}
+            value={roomType}
+            onChange={(type) => { setRoomType(type); if (type && !name) setName(type); }}
+          />
+        </View>
 
-        <View style={{ gap: theme.spacing.sm }}>
-          <TextField label="Name" value={name} onChangeText={setName} autoFocus placeholder="e.g. Smith Plumbing" />
-          <TextField label="Trade" value={trade} onChangeText={setTrade} placeholder="e.g. Plumber, Electrician" />
-          <TextField label="Phone" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
-          <TextField label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" />
-          <TextField label="Website" value={website} onChangeText={setWebsite} autoCapitalize="none" />
-          <TextField label="Notes" value={notes} onChangeText={setNotes} multiline numberOfLines={3} placeholder="e.g. Recommended by neighbour" />
+        <TextField label="Room name" value={name} onChangeText={setName} autoFocus placeholder="e.g. Kitchen" />
+
+        <View style={{ gap: theme.spacing.xs }}>
+          <Text variant="footnote" color="textSecondary">Floor (optional)</Text>
+          <ChipSelect options={FLOORS} value={floor} onChange={setFloor} />
         </View>
 
         {error ? <Text variant="footnote" color="danger">{error}</Text> : null}
 
-        <Button label="Save contractor" onPress={handleSave} loading={createContractor.isPending} disabled={!name.trim()} />
+        <Button label="Add room" onPress={handleSave} loading={createRoom.isPending} disabled={!name.trim()} />
       </ScrollView>
     </Screen>
   );
