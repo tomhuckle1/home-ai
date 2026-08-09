@@ -43,3 +43,38 @@ export function useCompleteMaintenanceTask() {
     },
   });
 }
+
+export function useCreateMaintenanceTask() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      property_id: string;
+      asset_id?: string | null;
+      title: string;
+      description?: string | null;
+      frequency_type: string;
+      next_due_date: string;
+      source: string;
+    }) => {
+      const { data, error } = await supabase
+        .from('maintenance_tasks')
+        .insert({
+          property_id: input.property_id,
+          asset_id: input.asset_id ?? null,
+          title: input.title,
+          description: input.description ?? null,
+          frequency_type: input.frequency_type as MaintenanceTaskRow['frequency_type'],
+          next_due_date: input.next_due_date,
+          source: input.source,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (task) => {
+      queryClient.invalidateQueries({ queryKey: maintenanceQueryKey(task.property_id) });
+    },
+  });
+}

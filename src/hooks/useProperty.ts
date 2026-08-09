@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
 import { supabase } from '@/src/lib/supabase';
-import type { PropertyInsert, PropertyRow } from '@/src/types/database';
+import type { PropertyInsert, PropertyRow, PropertyUpdate } from '@/src/types/database';
 
 import { propertiesQueryKey } from './useProperties';
 
@@ -30,6 +30,22 @@ export function useCreateProperty() {
     onSuccess: (property) => {
       queryClient.invalidateQueries({ queryKey: propertiesQueryKey });
       track(AnalyticsEvent.PropertyCreated, { property_id: property.id });
+    },
+  });
+}
+
+export function useUpdateProperty() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, update }: { id: string; update: PropertyUpdate }) => {
+      const { data, error } = await supabase.from('properties').update(update).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (property) => {
+      queryClient.invalidateQueries({ queryKey: ['property', property.id] });
+      queryClient.invalidateQueries({ queryKey: propertiesQueryKey });
     },
   });
 }
