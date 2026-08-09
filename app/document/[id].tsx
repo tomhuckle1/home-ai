@@ -3,9 +3,12 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 
-import { Badge, Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Badge, Button, Card, ChipSelect, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateAsset } from '@/src/hooks/useAssets';
 import { useDeleteDocument, useDocument, useRequestExtraction, useUpdateDocument } from '@/src/hooks/useDocuments';
+import { useAutoMatchAssets, useLinkDocumentPrimary, usePreviousDocument } from '@/src/hooks/useDocumentLinks';
+import { useContractors } from '@/src/hooks/useContractors';
+import { useAssetsByProperty } from '@/src/hooks/useAssets';
 import { useSignedUrl } from '@/src/hooks/useSignedUrl';
 import { DOCUMENT_TYPES } from '@/src/lib/asset-categories';
 import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
@@ -95,6 +98,12 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
   const updateDocument = useUpdateDocument();
   const createAsset = useCreateAsset();
   const deleteDocument = useDeleteDocument();
+  const linkDoc = useLinkDocumentPrimary();
+  const { data: matchedAssets } = useAutoMatchAssets(doc.property_id, doc.brand, doc.model);
+  const { data: allAssets } = useAssetsByProperty(doc.property_id);
+  const { data: contractors } = useContractors(doc.property_id);
+  const { data: previousDoc } = usePreviousDocument(doc.property_id, doc.document_type, id);
+  const isRenewable = ['gas_safety_record', 'epc', 'insurance_policy', 'certificate'].includes(doc.document_type);
 
   const [documentType, setDocumentType] = useState<DocumentType>(doc.document_type);
   const [supplier, setSupplier] = useState(doc.supplier ?? '');
@@ -216,6 +225,79 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         <Text variant="footnote" color="textSecondary">
           Saved as an item in this room.
         </Text>
+      ) : null}
+
+      {/* Auto-match: suggest linking to an existing item */}
+      {!doc.asset_id && matchedAssets && matchedAssets.length > 0 ? (
+        <Card>
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="headline">Link to an existing item?</Text>
+            <Text variant="footnote" color="textSecondary">
+              We found items that might match this document.
+            </Text>
+            {matchedAssets.slice(0, 3).map((asset) => (
+              <ListRow
+                key={asset.id}
+                title={asset.name}
+                subtitle={[asset.brand, asset.model].filter(Boolean).join(' · ') || asset.category}
+                showChevron
+                onPress={() => linkDoc.mutate({ documentId: id, assetId: asset.id })}
+              />
+            ))}
+          </View>
+        </Card>
+      ) : null}
+
+      {/* Manual asset linking if no auto-match */}
+      {!doc.asset_id && (!matchedAssets || matchedAssets.length === 0) && allAssets && allAssets.length > 0 ? (
+        <Button
+          label="Link to an item"
+          variant="ghost"
+          onPress={() => {
+            const options = [
+              ...(allAssets ?? []).slice(0, 10).map((a) => ({
+                text: `${a.name}${a.brand ? ` (${a.brand})` : ''}`,
+                onPress: () => linkDoc.mutate({ documentId: id, assetId: a.id }),
+              })),
+              { text: 'None — property document', style: 'cancel' as const },
+            ];
+            Alert.alert('Which item is this for?', undefined, options);
+          }}
+        />
+      ) : null}
+
+      {/* Contractor linking for invoices/receipts */}
+      {!doc.contractor_id && contractors && contractors.length > 0 && ['invoice', 'receipt', 'certificate'].includes(doc.document_type) ? (
+        <Button
+          label="Link to a contractor"
+          variant="ghost"
+          onPress={() => {
+            const options = [
+              ...(contractors ?? []).map((c) => ({
+                text: `${c.name}${c.trade ? ` (${c.trade})` : ''}`,
+                onPress: () => linkDoc.mutate({ documentId: id, contractorId: c.id }),
+              })),
+              { text: 'Skip', style: 'cancel' as const },
+            ];
+            Alert.alert('Who did this work?', undefined, options);
+          }}
+        />
+      ) : null}
+
+      {/* Renewable document: supersedes previous version */}
+      {isRenewable && previousDoc && !doc.supersedes_id ? (
+        <Card>
+          <View style={{ gap: theme.spacing.xs }}>
+            <Text variant="footnote" color="textSecondary">
+              This appears to replace your previous {doc.document_type.replace(/_/g, ' ')} from {previousDoc.document_date || previousDoc.created_at.slice(0, 10)}.
+            </Text>
+            <Button
+              label="Mark as replacement"
+              variant="secondary"
+              onPress={() => updateDocument.mutate({ id, update: { supersedes_id: previousDoc.id } })}
+            />
+          </View>
+        </Card>
       ) : null}
 
       {isWithinDeleteWindow(doc.created_at) ? (
