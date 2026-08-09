@@ -3,7 +3,6 @@ import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 
 import { Button, Card, ListRow, Screen, Text, useTheme } from '@/src/design-system';
 import { useDeleteTimelineEvent, useTimelineEvent } from '@/src/hooks/useTimeline';
-import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 import { TIMELINE_EVENT_ICON } from '@/src/lib/timeline-icons';
 
 export default function TimelineEventDetailScreen() {
@@ -85,7 +84,7 @@ export default function TimelineEventDetailScreen() {
           </View>
         ) : null}
 
-        {isWithinDeleteWindow(event.created_at) ? (
+        {true ? (
           <Button label="Delete event" variant="danger" onPress={handleDelete} loading={deleteEvent.isPending} />
         ) : (
           <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>
