@@ -82,3 +82,19 @@ export function useCreateRoom() {
     },
   });
 }
+
+export function useUpdateRoom() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, update }: { id: string; update: Partial<Pick<RoomRow, 'name' | 'room_type' | 'floor' | 'photo_path' | 'sort_order'>> }) => {
+      const { data, error } = await supabase.from('rooms').update(update).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (room) => {
+      queryClient.invalidateQueries({ queryKey: ['room', room.id] });
+      queryClient.invalidateQueries({ queryKey: roomsQueryKey(room.property_id) });
+    },
+  });
+}
