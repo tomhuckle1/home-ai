@@ -128,4 +128,3 @@ function AddReadingForm({ propertyId, meterType, unit, onDone }: { propertyId: s
     </Card>
   );
 }
-ENDOFFILE
