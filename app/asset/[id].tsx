@@ -11,7 +11,6 @@ import { useContractorsByTrade } from '@/src/hooks/useContractors';
 import { useDocumentsByAsset } from '@/src/hooks/useDocumentLinks';
 import { useRooms } from '@/src/hooks/useRooms';
 import { useSignedUrl } from '@/src/hooks/useSignedUrl';
-import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 import { ASSET_CATEGORIES } from '@/src/lib/asset-categories';
 import type { DocumentRow, DocumentType } from '@/src/types/database';
 
@@ -184,10 +183,10 @@ export default function AssetDetailScreen() {
         ) : null}
 
         {/* Delete */}
-        {isWithinDeleteWindow(asset.created_at) ? (
+        {true ? (
           <Button label="Delete item" variant="danger" onPress={handleDelete} loading={deleteAsset.isPending} />
         ) : (
-          <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>Past the 30-minute deletion window.</Text>
+          <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}></Text>
         )}
       </ScrollView>
     </Screen>
