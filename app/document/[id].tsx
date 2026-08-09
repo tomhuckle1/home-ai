@@ -11,7 +11,6 @@ import { useContractors } from '@/src/hooks/useContractors';
 import { useAssetsByProperty } from '@/src/hooks/useAssets';
 import { useSignedUrl } from '@/src/hooks/useSignedUrl';
 import { DOCUMENT_TYPES } from '@/src/lib/asset-categories';
-import { isWithinDeleteWindow } from '@/src/lib/deleteWindow';
 import type { DocumentRow, DocumentType } from '@/src/types/database';
 
 const STUCK_AFTER_MS = 20000;
@@ -300,7 +299,7 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         </Card>
       ) : null}
 
-      {isWithinDeleteWindow(doc.created_at) ? (
+      {true ? (
         <Button label="Delete document" variant="danger" onPress={handleDelete} loading={deleteDocument.isPending} />
       ) : (
         <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>
