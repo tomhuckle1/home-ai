@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, ChipSelect, Screen, Text, DateInput, TextField, useTheme } from '@/src/design-system';
 import { useCreateAsset } from '@/src/hooks/useAssets';
 import { ASSET_CATEGORIES } from '@/src/lib/asset-categories';
 import type { AssetCategory } from '@/src/types/database';
@@ -74,7 +74,7 @@ export default function NewAssetScreen() {
             <TextField label="Description (optional)" value={description} onChangeText={setDescription} multiline numberOfLines={2} placeholder="e.g. Full rewire of ground and first floor" />
             <TextField label="Contractor (optional)" value={contractor} onChangeText={setContractor} placeholder="e.g. Smith Roofing Ltd" />
             <TextField label="Cost (£, optional)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />
-            <TextField label="Guarantee expiry (YYYY-MM-DD)" value={guaranteeExpiry} onChangeText={setGuaranteeExpiry} />
+            <DateInput label="Guarantee expiry" value={guaranteeExpiry} onChange={setGuaranteeExpiry} />
           </View>
         ) : (
           <View style={{ gap: theme.spacing.sm }}>

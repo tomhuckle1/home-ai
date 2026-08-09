@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, ChipSelect, DateInput, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useProperty, useUpdateProperty } from '@/src/hooks/useProperty';
 import { uploadPropertyImage } from '@/src/lib/storage';
 import type { PropertyType, TenureType } from '@/src/types/database';
@@ -126,13 +126,13 @@ export default function EditPropertyScreen() {
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="headline">Energy &amp; council tax</Text>
           <TextField label="EPC rating" value={epcRating} onChangeText={setEpcRating} placeholder="e.g. C" />
-          <TextField label="EPC expiry (YYYY-MM-DD)" value={epcExpiry} onChangeText={setEpcExpiry} />
+          <DateInput label="EPC expiry" value={epcExpiry} onChange={setEpcExpiry} />
           <TextField label="Council tax band" value={councilTaxBand} onChangeText={setCouncilTaxBand} placeholder="e.g. D" />
         </View>
 
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="headline">Purchase info</Text>
-          <TextField label="Purchase date (YYYY-MM-DD)" value={purchaseDate} onChangeText={setPurchaseDate} />
+          <DateInput label="Purchase date" value={purchaseDate} onChange={setPurchaseDate} />
           <TextField label="Purchase price (£)" value={purchasePrice} onChangeText={setPurchasePrice} keyboardType="decimal-pad" />
         </View>
 

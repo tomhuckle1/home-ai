@@ -93,9 +93,9 @@ export default function EditAssetScreen() {
           <TextField label="Model" value={model} onChangeText={setModel} />
           <TextField label="Serial number" value={serialNumber} onChangeText={setSerialNumber} />
           <TextField label="Retailer" value={retailer} onChangeText={setRetailer} />
-          <TextField label="Purchase date (YYYY-MM-DD)" value={purchaseDate} onChangeText={setPurchaseDate} />
+          <DateInput label="Purchase date" value={purchaseDate} onChange={setPurchaseDate} />
           <TextField label="Purchase price (£)" value={purchasePrice} onChangeText={setPurchasePrice} keyboardType="decimal-pad" />
-          <TextField label="Warranty expiry (YYYY-MM-DD)" value={warrantyExpiry} onChangeText={setWarrantyExpiry} />
+          <DateInput label="Warranty expiry" value={warrantyExpiry} onChange={setWarrantyExpiry} />
           <TextField label="Warranty provider" value={warrantyProvider} onChangeText={setWarrantyProvider} />
           <TextField label="Notes" value={notes} onChangeText={setNotes} multiline numberOfLines={3} />
         </View>

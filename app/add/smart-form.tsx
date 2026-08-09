@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, ScrollView, Switch, View } from 'react-native';
 
-import { Button, Card, ChipSelect, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, Card, ChipSelect, DateInput, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateAsset } from '@/src/hooks/useAssets';
 import { useCreateMaintenanceTask } from '@/src/hooks/useMaintenance';
 import { useRooms, useCreateRoom } from '@/src/hooks/useRooms';
@@ -188,6 +188,16 @@ export default function SmartFormScreen() {
                   <Text variant="footnote" color="textSecondary">{field.label}</Text>
                   <ChipSelect options={field.options} value={fieldValues[field.key]} onChange={(v) => setField(field.key, v ?? '')} />
                 </View>
+              );
+            }
+            if (field.type === 'date') {
+              return (
+                <DateInput
+                  key={field.key}
+                  label={field.label}
+                  value={fieldValues[field.key] ?? ''}
+                  onChange={(v) => setField(field.key, v)}
+                />
               );
             }
             return (

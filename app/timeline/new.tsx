@@ -73,7 +73,7 @@ export default function NewTimelineEventScreen() {
 
         <View style={{ gap: theme.spacing.sm }}>
           <TextField label="Title" value={title} onChangeText={setTitle} autoFocus placeholder="e.g. New boiler installed" />
-          <TextField label="Date (YYYY-MM-DD)" value={eventDate} onChangeText={setEventDate} />
+          <DateInput label="Date" value={eventDate} onChange={setEventDate} />
           <TextField label="Cost (£, optional)" value={cost} onChangeText={setCost} keyboardType="decimal-pad" />
           <TextField label="Notes (optional)" value={description} onChangeText={setDescription} multiline />
         </View>

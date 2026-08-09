@@ -13,6 +13,7 @@ import { useRooms } from '@/src/hooks/useRooms';
 import { useSpendingSummary } from '@/src/hooks/useSpending';
 import { useInsurancePolicies, useVehicles } from '@/src/hooks/useVehiclesAndInsurance';
 import { useWarrantyAlerts } from '@/src/hooks/useWarrantyAlerts';
+import { useSmartNudges } from '@/src/hooks/useSmartNudges';
 import { registerForPushNotificationsIfNeeded } from '@/src/lib/pushNotifications';
 
 export default function HomeScreen() {
@@ -64,6 +65,9 @@ export default function HomeScreen() {
 
         {/* Getting started checklist */}
         <GettingStarted propertyId={firstProperty.id} />
+
+        {/* Smart nudges */}
+        <SmartNudges propertyId={firstProperty.id} />
 
         {/* Health score */}
         <HealthScoreCard propertyId={firstProperty.id} />
@@ -121,6 +125,49 @@ function GettingStarted({ propertyId }: { propertyId: string }) {
             showChevron
           />
         </Card>
+      ))}
+    </View>
+  );
+}
+
+/* ── Smart nudges ─────────────────────────────────────────────────── */
+
+function SmartNudges({ propertyId }: { propertyId: string }) {
+  const theme = useTheme();
+  const { data: nudges } = useSmartNudges(propertyId);
+
+  if (!nudges || nudges.length === 0) return null;
+
+  const toneColors = {
+    warning: theme.colors.warningMuted,
+    info: theme.colors.accentMuted,
+    tip: theme.colors.surfaceAlt,
+  };
+
+  return (
+    <View style={{ gap: theme.spacing.xs }}>
+      {nudges.slice(0, 4).map((nudge) => (
+        <Pressable
+          key={nudge.id}
+          accessibilityRole="button"
+          onPress={nudge.action ? () => router.push(nudge.action!.route as any) : undefined}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            backgroundColor: toneColors[nudge.tone],
+            borderRadius: theme.radius.lg,
+            padding: theme.spacing.sm,
+            opacity: pressed && nudge.action ? 0.7 : 1,
+          })}
+        >
+          <Text style={{ fontSize: 20, lineHeight: 24 }}>{nudge.icon}</Text>
+          <View style={{ flex: 1, gap: 1 }}>
+            <Text variant="body" numberOfLines={1}>{nudge.title}</Text>
+            <Text variant="caption" color="textSecondary" numberOfLines={1}>{nudge.description}</Text>
+          </View>
+          {nudge.action ? <Ionicons name="chevron-forward" size={16} color={theme.colors.textTertiary} /> : null}
+        </Pressable>
       ))}
     </View>
   );

@@ -4,6 +4,7 @@ export * from './Badge';
 export * from './Button';
 export * from './Card';
 export * from './ChipSelect';
+export * from './DateInput';
 export * from './Divider';
 export * from './EmptyState';
 export * from './HeaderCloseButton';

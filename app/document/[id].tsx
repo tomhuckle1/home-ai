@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, ScrollView, View } from 'react-native';
 
-import { Badge, Button, Card, ChipSelect, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Badge, Button, Card, ChipSelect, DateInput, ListRow, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateAsset } from '@/src/hooks/useAssets';
 import { useDeleteDocument, useDocument, useRequestExtraction, useUpdateDocument } from '@/src/hooks/useDocuments';
 import { useAutoMatchAssets, useLinkDocumentPrimary, usePreviousDocument } from '@/src/hooks/useDocumentLinks';
@@ -202,8 +202,8 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         <TextField label="Model" value={model} onChangeText={setModel} />
         <TextField label="Supplier / retailer" value={supplier} onChangeText={setSupplier} />
         <TextField label="Amount (£)" value={amount} onChangeText={setAmount} keyboardType="decimal-pad" />
-        <TextField label="Document date (YYYY-MM-DD)" value={documentDate} onChangeText={setDocumentDate} />
-        <TextField label="Expiry / warranty date (YYYY-MM-DD)" value={expiryDate} onChangeText={setExpiryDate} />
+        <DateInput label="Document date" value={documentDate} onChange={setDocumentDate} />
+        <DateInput label="Expiry / warranty date" value={expiryDate} onChange={setExpiryDate} />
       </View>
 
       <Button

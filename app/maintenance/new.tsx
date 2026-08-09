@@ -27,10 +27,6 @@ export default function NewMaintenanceScreen() {
 
   async function handleSave() {
     setError(null);
-    if (!nextDueDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      setError('Enter the next due date in YYYY-MM-DD format.');
-      return;
-    }
     try {
       await createTask.mutateAsync({
         property_id: propertyId,
@@ -84,12 +80,7 @@ export default function NewMaintenanceScreen() {
           />
         </View>
 
-        <TextField
-          label="Next due date (YYYY-MM-DD)"
-          value={nextDueDate}
-          onChangeText={setNextDueDate}
-          placeholder="e.g. 2027-01-15"
-        />
+        <DateInput label="Next due date" value={nextDueDate} onChange={setNextDueDate} />
 
         {error ? <Text variant="footnote" color="danger">{error}</Text> : null}
 

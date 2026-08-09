@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Switch, View } from 'react-native';
 
-import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, ChipSelect, DateInput, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateMaintenanceTask } from '@/src/hooks/useMaintenance';
 import { useCreateInsurancePolicy } from '@/src/hooks/useVehiclesAndInsurance';
 import type { InsurancePolicyType } from '@/src/types/database';
@@ -105,8 +105,8 @@ export default function AddInsuranceScreen() {
           <TextField label="Policy number (optional)" value={policyNumber} onChangeText={setPolicyNumber} />
           <TextField label="Annual premium (£)" value={premium} onChangeText={setPremium} keyboardType="decimal-pad" />
           <TextField label="Excess (£, optional)" value={excess} onChangeText={setExcess} keyboardType="decimal-pad" />
-          <TextField label="Start date (YYYY-MM-DD)" value={startDate} onChangeText={setStartDate} />
-          <TextField label="Renewal date (YYYY-MM-DD)" value={renewalDate} onChangeText={setRenewalDate} />
+          <DateInput label="Start date" value={startDate} onChange={setStartDate} />
+          <DateInput label="Renewal date" value={renewalDate} onChange={setRenewalDate} />
           <TextField label="Notes (optional)" value={notes} onChangeText={setNotes} multiline />
         </View>
 

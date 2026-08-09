@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, Switch, View } from 'react-native';
 
-import { Button, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, DateInput, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateMaintenanceTask } from '@/src/hooks/useMaintenance';
 import { useCreateVehicle } from '@/src/hooks/useVehiclesAndInsurance';
 
@@ -117,15 +117,15 @@ export default function AddVehicleScreen() {
 
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="headline">Key dates</Text>
-          <TextField label="MOT expiry (YYYY-MM-DD)" value={motExpiry} onChangeText={setMotExpiry} />
-          <TextField label="Tax expiry (YYYY-MM-DD)" value={taxExpiry} onChangeText={setTaxExpiry} />
-          <TextField label="Next service due (YYYY-MM-DD)" value={serviceDueDate} onChangeText={setServiceDueDate} />
+          <DateInput label="MOT expiry" value={motExpiry} onChange={setMotExpiry} />
+          <DateInput label="Tax expiry" value={taxExpiry} onChange={setTaxExpiry} />
+          <DateInput label="Next service due" value={serviceDueDate} onChange={setServiceDueDate} />
         </View>
 
         <View style={{ gap: theme.spacing.sm }}>
           <Text variant="headline">Insurance</Text>
           <TextField label="Insurance provider" value={insuranceProvider} onChangeText={setInsuranceProvider} />
-          <TextField label="Insurance renewal (YYYY-MM-DD)" value={insuranceRenewal} onChangeText={setInsuranceRenewal} />
+          <DateInput label="Insurance renewal" value={insuranceRenewal} onChange={setInsuranceRenewal} />
         </View>
 
         {/* Reminders toggle */}

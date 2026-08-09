@@ -97,6 +97,37 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
         <Stack.Screen name="passport/[propertyId]" options={{ headerShown: true, title: 'Home Passport' }} />
         <Stack.Screen name="legal/privacy" options={{ headerShown: true, title: 'Privacy Policy' }} />
         <Stack.Screen name="legal/terms" options={{ headerShown: true, title: 'Terms of Service' }} />
+        <Stack.Screen
+          name="add/index"
+          options={{ headerShown: false, presentation: 'modal' }}
+        />
+        <Stack.Screen
+          name="add/smart-form"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="add/insurance"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="add/vehicle"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen name="asset/edit" options={{ headerShown: true, title: 'Edit item' }} />
+        <Stack.Screen name="property/edit" options={{ headerShown: true, title: 'Edit property' }} />
+        <Stack.Screen name="contractor/index" options={{ headerShown: true, title: 'Contractors' }} />
+        <Stack.Screen
+          name="contractor/new"
+          options={{ headerShown: true, title: 'Add contractor', presentation: 'modal', headerLeft: closeButton }}
+        />
+        <Stack.Screen name="contractor/[id]" options={{ headerShown: true, title: 'Contractor' }} />
+        <Stack.Screen
+          name="maintenance/new"
+          options={{ headerShown: true, title: 'Add reminder', presentation: 'modal', headerLeft: closeButton }}
+        />
+        <Stack.Screen name="search/index" options={{ headerShown: false }} />
+        <Stack.Screen name="ai-history/index" options={{ headerShown: true, title: 'Past conversations' }} />
+        <Stack.Screen name="ai-history/[id]" options={{ headerShown: true, title: 'Conversation' }} />
       </Stack.Protected>
       <Stack.Protected guard={status === 'signedOut'}>
         <Stack.Screen name="(auth)" />
