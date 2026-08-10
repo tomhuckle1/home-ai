@@ -78,7 +78,7 @@ export default function VehicleDetailScreen() {
 
   if (editing) {
     return (
-      <Screen edges={['bottom']}>
+      <Screen edges={['top', 'bottom']}>
         <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
             <Pressable accessibilityRole="button" onPress={() => setEditing(false)} hitSlop={12}>
@@ -104,7 +104,7 @@ export default function VehicleDetailScreen() {
   }
 
   return (
-    <Screen edges={['bottom']}>
+    <Screen edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
         <View style={{ gap: theme.spacing.xxs }}>
           <Text variant="title1">{vehicleName}</Text>

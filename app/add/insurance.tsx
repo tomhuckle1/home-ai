@@ -85,7 +85,7 @@ export default function AddInsuranceScreen() {
   }
 
   return (
-    <Screen edges={['bottom']}>
+    <Screen edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
           <Pressable accessibilityRole="button" accessibilityLabel="Back" onPress={() => router.back()} hitSlop={12}>

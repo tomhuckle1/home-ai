@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
 
   const { data: document, error: fetchError } = await supabase
     .from('documents')
-    .select('id, file_path, property_id, properties(household_id)')
+    .select('id, file_path, file_type, property_id, properties(household_id)')
     .eq('id', documentId)
     .single();
 
@@ -51,6 +51,21 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: 'Document not found or not accessible' }, 404);
   }
   const householdId = (document as { properties?: { household_id?: string } }).properties?.household_id;
+
+  // The vision model only accepts image content — a PDF (or any other
+  // non-image upload) can't be sent to it as an image_url, so calling
+  // OpenAI here would just burn a request on a guaranteed 400. Skip
+  // straight to a clear, permanent "read it yourself" message instead.
+  if (document.file_type && !document.file_type.startsWith('image/')) {
+    await supabase
+      .from('documents')
+      .update({
+        extraction_status: 'failed',
+        extraction_error: "AI reading isn't available for PDF or other non-photo files yet — please fill in the details manually.",
+      })
+      .eq('id', documentId);
+    return jsonResponse({ success: true });
+  }
 
   await supabase.from('documents').update({ extraction_status: 'processing' }).eq('id', documentId);
 

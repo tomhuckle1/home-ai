@@ -135,7 +135,7 @@ export default function SmartFormScreen() {
   ];
 
   return (
-    <Screen edges={['bottom']}>
+    <Screen edges={['top', 'bottom']}>
       <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
         {/* Header with back button */}
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: theme.spacing.sm }}>
