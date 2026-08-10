@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/src/lib/supabase';
-import type { AssetRow, DocumentRow } from '@/src/types/database';
+import type { AssetRow, DocumentRow, DocumentType, DocumentUpdate } from '@/src/types/database';
 
 /** Documents linked to a specific asset (via asset_id or document_assets junction) */
 export function useDocumentsByAsset(assetId: string | undefined) {
@@ -122,7 +122,7 @@ export function useAutoMatchAssets(propertyId: string | undefined, brand: string
 }
 
 /** Find a previous version of a renewable document */
-export function usePreviousDocument(propertyId: string | undefined, documentType: string, currentDocId: string | undefined) {
+export function usePreviousDocument(propertyId: string | undefined, documentType: DocumentType, currentDocId: string | undefined) {
   return useQuery<DocumentRow | null>({
     queryKey: ['previous-document', propertyId, documentType, currentDocId],
     enabled: !!propertyId && !!currentDocId,
@@ -164,7 +164,7 @@ export function useLinkDocumentPrimary() {
 
   return useMutation({
     mutationFn: async ({ documentId, assetId, contractorId }: { documentId: string; assetId?: string | null; contractorId?: string | null }) => {
-      const update: Record<string, unknown> = {};
+      const update: DocumentUpdate = {};
       if (assetId !== undefined) update.asset_id = assetId;
       if (contractorId !== undefined) update.contractor_id = contractorId;
       const { error } = await supabase.from('documents').update(update).eq('id', documentId);

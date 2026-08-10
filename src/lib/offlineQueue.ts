@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NetInfo from '@react-native-community/netinfo';
-import * as FileSystem from 'expo-file-system';
+import { File } from 'expo-file-system';
 
 import { supabase } from './supabase';
 
@@ -55,14 +55,13 @@ export async function processQueue(): Promise<{ processed: number; failed: numbe
 
   for (const upload of queue) {
     try {
-      const fileInfo = await FileSystem.getInfoAsync(upload.localUri);
-      if (!fileInfo.exists) {
+      const file = new File(upload.localUri);
+      if (!file.exists) {
         await dequeueUpload(upload.id);
         continue;
       }
 
-      const base64 = await FileSystem.readAsStringAsync(upload.localUri, { encoding: FileSystem.EncodingType.Base64 });
-      const bytes = Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+      const bytes = new Uint8Array(await file.arrayBuffer());
 
       const { error } = await supabase.storage.from(upload.bucket).upload(upload.storagePath, bytes, {
         contentType: 'image/jpeg',

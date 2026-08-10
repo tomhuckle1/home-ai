@@ -106,12 +106,12 @@ export default function PaywallScreen() {
                 <PricingCard label="Annual" price="£34.99" per="/year" subtitle="Save 42%" selected={selectedPlan === 'annual'} onPress={() => setSelectedPlan('annual')} badge="Best value" />
               </View>
               <Text variant="caption" color="textTertiary" style={{ textAlign: 'center' }}>
-                Purchases aren't available in this build — this needs a production build.
+                Purchases aren&apos;t available in this build — this needs a production build.
               </Text>
             </View>
           </Card>
         ) : !offering ? (
-          <Card><Text variant="body" color="textSecondary">Pricing isn't available right now.</Text></Card>
+          <Card><Text variant="body" color="textSecondary">Pricing isn&apos;t available right now.</Text></Card>
         ) : (
           <View style={{ gap: theme.spacing.sm }}>
             {offering.annual ? <PackageCard pkg={offering.annual} onPress={() => handlePurchase(offering.annual!)} loading={purchase.isPending} badge="Best value" /> : null}

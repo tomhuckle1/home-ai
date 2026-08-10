@@ -38,11 +38,14 @@ export default function AddInsuranceScreen() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const typeLabel = POLICY_TYPES.find((t) => t.value === policyType)?.label ?? policyType;
-
   async function handleSave() {
+    if (!policyType) {
+      setError('Please choose a policy type.');
+      return;
+    }
     setSaving(true);
     setError(null);
+    const typeLabel = POLICY_TYPES.find((t) => t.value === policyType)?.label ?? policyType;
     try {
       const parsedPremium = premium.trim() ? Number(premium) : null;
       const parsedExcess = excess.trim() ? Number(excess) : null;

@@ -323,6 +323,7 @@ export type InsurancePolicyRow = {
 }
 export type InsurancePolicyInsert = Pick<InsurancePolicyRow, 'property_id' | 'policy_type'> &
   Partial<Omit<InsurancePolicyRow, 'id' | 'property_id' | 'policy_type' | 'created_at' | 'updated_at'>>;
+export type InsurancePolicyUpdate = Partial<Omit<InsurancePolicyRow, 'id' | 'property_id' | 'created_at' | 'updated_at'>>;
 
 export type RoomDetailType = 'paint' | 'flooring' | 'tiles' | 'wallpaper' | 'curtains';
 
@@ -568,6 +569,22 @@ export type Database = {
         Row: AiUsageEventRow;
         Insert: AiUsageEventInsert;
         Update: Partial<AiUsageEventInsert>;
+      } & NoRelationships;
+      vehicles: { Row: VehicleRow; Insert: VehicleInsert; Update: VehicleUpdate } & NoRelationships;
+      insurance_policies: {
+        Row: InsurancePolicyRow;
+        Insert: InsurancePolicyInsert;
+        Update: Partial<InsurancePolicyInsert>;
+      } & NoRelationships;
+      room_details: {
+        Row: RoomDetailRow;
+        Insert: RoomDetailInsert;
+        Update: Partial<RoomDetailInsert>;
+      } & NoRelationships;
+      meter_readings: {
+        Row: MeterReadingRow;
+        Insert: MeterReadingInsert;
+        Update: Partial<MeterReadingInsert>;
       } & NoRelationships;
     };
   };

@@ -2,7 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
-import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, ChipSelect, DateInput, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useCreateMaintenanceTask } from '@/src/hooks/useMaintenance';
 import type { MaintenanceFrequency } from '@/src/types/database';
 

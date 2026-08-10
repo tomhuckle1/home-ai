@@ -1,7 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { supabase } from '@/src/lib/supabase';
-import type { InsurancePolicyInsert, InsurancePolicyRow, RoomDetailInsert, RoomDetailRow, VehicleInsert, VehicleRow, VehicleUpdate } from '@/src/types/database';
+import type {
+  InsurancePolicyInsert,
+  InsurancePolicyRow,
+  InsurancePolicyUpdate,
+  RoomDetailInsert,
+  RoomDetailRow,
+  VehicleInsert,
+  VehicleRow,
+  VehicleUpdate,
+} from '@/src/types/database';
 
 /* ── Vehicles ─────────────────────────────────────────────────────── */
 
@@ -72,6 +81,18 @@ export function useCreateInsurancePolicy() {
   return useMutation({
     mutationFn: async (input: InsurancePolicyInsert) => {
       const { data, error } = await supabase.from('insurance_policies').insert(input).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (p) => { queryClient.invalidateQueries({ queryKey: ['insurance', p.property_id] }); },
+  });
+}
+
+export function useUpdateInsurancePolicy() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, update }: { id: string; update: InsurancePolicyUpdate }) => {
+      const { data, error } = await supabase.from('insurance_policies').update(update).eq('id', id).select().single();
       if (error) throw error;
       return data;
     },

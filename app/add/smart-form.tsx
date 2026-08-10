@@ -39,6 +39,7 @@ export default function SmartFormScreen() {
   const [error, setError] = useState<string | null>(null);
 
   if (!category) return null;
+  const cat = category;
 
   function setField(key: string, value: string) {
     setFieldValues((prev) => ({ ...prev, [key]: value }));
@@ -57,8 +58,8 @@ export default function SmartFormScreen() {
     setError(null);
     try {
       let finalRoomId = roomId;
-      if (category.askRoom && roomId === '__new__') {
-        const suggestedName = category.suggestedRoom || 'Room';
+      if (cat.askRoom && roomId === '__new__') {
+        const suggestedName = cat.suggestedRoom || 'Room';
         const newRoom = await createRoom.mutateAsync({ property_id: propertyId, name: suggestedName });
         finalRoomId = newRoom.id;
       }
@@ -67,7 +68,7 @@ export default function SmartFormScreen() {
         property_id: propertyId,
         room_id: finalRoomId ?? null,
         name: name.trim(),
-        category: category.assetCategory,
+        category: cat.assetCategory,
         brand: fieldValues.brand?.trim() || null,
         model: fieldValues.model?.trim() || null,
         serial_number: fieldValues.serial_number?.trim() || null,
@@ -78,7 +79,7 @@ export default function SmartFormScreen() {
         notes: fieldValues.description?.trim() || null,
         status: 'active',
         attributes: {
-          smart_category: category.id,
+          smart_category: cat.id,
           last_service: fieldValues.last_service || null,
           device_type: fieldValues.device_type || null,
           detail_subtype: fieldValues.detail_subtype || null,
@@ -91,10 +92,10 @@ export default function SmartFormScreen() {
       });
 
       // Create reminders with user-selected frequency
-      const activeReminders = category.reminders.filter((_, i) => enabledReminders[i]);
-      for (let i = 0; i < category.reminders.length; i++) {
+      const activeReminders = cat.reminders.filter((_, i) => enabledReminders[i]);
+      for (let i = 0; i < cat.reminders.length; i++) {
         if (!enabledReminders[i]) continue;
-        const reminder = category.reminders[i];
+        const reminder = cat.reminders[i];
         const freq = reminderFreqs[i] || reminder.frequencyType;
         const nextDue = calculateNextDue(freq);
         await createReminder.mutateAsync({
