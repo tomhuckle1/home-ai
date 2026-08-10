@@ -198,11 +198,7 @@ export default function AssetDetailScreen() {
         ) : null}
 
         {/* Delete */}
-        {true ? (
-          <Button label="Delete item" variant="danger" onPress={handleDelete} loading={deleteAsset.isPending} />
-        ) : (
-          <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}></Text>
-        )}
+        <Button label="Delete item" variant="danger" onPress={handleDelete} loading={deleteAsset.isPending} />
       </ScrollView>
     </Screen>
   );

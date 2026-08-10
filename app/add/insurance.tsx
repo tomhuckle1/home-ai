@@ -26,7 +26,7 @@ export default function AddInsuranceScreen() {
   const createPolicy = useCreateInsurancePolicy();
   const createReminder = useCreateMaintenanceTask();
 
-  const [policyType, setPolicyType] = useState<InsurancePolicyType>('home_buildings');
+  const [policyType, setPolicyType] = useState<InsurancePolicyType | undefined>();
   const [provider, setProvider] = useState('');
   const [policyNumber, setPolicyNumber] = useState('');
   const [premium, setPremium] = useState('');
