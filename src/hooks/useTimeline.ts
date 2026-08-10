@@ -81,3 +81,18 @@ export function useCreateTimelineEvent() {
     },
   });
 }
+
+export function useUpdateTimelineEvent() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, update }: { id: string; update: Partial<{ title: string; event_date: string; cost: number | null; description: string | null }> }) => {
+      const { data, error } = await supabase.from('timeline_events').update(update).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (event) => {
+      queryClient.invalidateQueries({ queryKey: ['timeline-event', event.id] });
+      queryClient.invalidateQueries({ queryKey: ['timeline', event.property_id] });
+    },
+  });
+}

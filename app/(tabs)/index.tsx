@@ -1,7 +1,8 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Image, Pressable, RefreshControl, ScrollView, View } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { Badge, Button, Card, ListRow, ProgressRing, Screen, SectionHeader, SkeletonList, StatCard, Text, useTheme } from '@/src/design-system';
@@ -126,11 +127,17 @@ function GettingStarted({ propertyId }: { propertyId: string }) {
   const { data: rooms } = useRooms(propertyId);
   const { data: assets } = useAssetsByProperty(propertyId);
   const { data: insurance } = useInsurancePolicies(propertyId);
+  const [dismissed, setDismissed] = useState(false);
   const hasRooms = (rooms?.length ?? 0) > 0;
   const hasItems = (assets?.length ?? 0) > 0;
   const hasInsurance = (insurance?.length ?? 0) > 0;
   const completedCount = [hasRooms, hasItems, hasInsurance].filter(Boolean).length;
-  if (completedCount >= 3) return null;
+
+  useEffect(() => {
+    AsyncStorage.getItem('getting-started-dismissed').then((v) => { if (v === 'true') setDismissed(true); });
+  }, []);
+
+  if (completedCount >= 3 || dismissed) return null;
 
   const steps = [
     { done: hasItems, icon: '📦', title: 'Record your first item', subtitle: 'Boiler, fire alarm, or appliance', action: () => router.push('/add') },
@@ -143,7 +150,10 @@ function GettingStarted({ propertyId }: { propertyId: string }) {
       <Card>
         <View style={{ gap: theme.spacing.sm }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-            <Text variant="headline">Getting started</Text>
+            <Text variant="headline" style={{ flex: 1 }}>Getting started</Text>
+            <Pressable accessibilityRole="button" accessibilityLabel="Dismiss" onPress={() => { setDismissed(true); AsyncStorage.setItem('getting-started-dismissed', 'true'); }} hitSlop={12}>
+              <Ionicons name="close" size={18} color={theme.colors.textTertiary} />
+            </Pressable>
             <View style={{ flexDirection: 'row', gap: 4 }}>
               {[0, 1, 2].map((i) => <View key={i} style={{ width: i < completedCount ? 24 : 8, height: 6, borderRadius: 3, backgroundColor: i < completedCount ? theme.colors.accent : theme.colors.border }} />)}
             </View>

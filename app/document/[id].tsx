@@ -249,38 +249,39 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
 
       {/* Manual asset linking if no auto-match */}
       {!doc.asset_id && (!matchedAssets || matchedAssets.length === 0) && allAssets && allAssets.length > 0 ? (
-        <Button
-          label="Link to an item"
-          variant="ghost"
-          onPress={() => {
-            const options = [
-              ...(allAssets ?? []).slice(0, 10).map((a) => ({
-                text: `${a.name}${a.brand ? ` (${a.brand})` : ''}`,
-                onPress: () => linkDoc.mutate({ documentId: id, assetId: a.id }),
-              })),
-              { text: 'None — property document', style: 'cancel' as const },
-            ];
-            Alert.alert('Which item is this for?', undefined, options);
-          }}
-        />
+        <Card>
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="headline">Which item is this for?</Text>
+            <Text variant="footnote" color="textSecondary">Link this document to an item, or leave it as a property document.</Text>
+            {allAssets.slice(0, 8).map((asset) => (
+              <ListRow
+                key={asset.id}
+                title={asset.name}
+                subtitle={[asset.brand, asset.model].filter(Boolean).join(' · ') || asset.category}
+                showChevron
+                onPress={() => linkDoc.mutate({ documentId: id, assetId: asset.id })}
+              />
+            ))}
+          </View>
+        </Card>
       ) : null}
 
       {/* Contractor linking for invoices/receipts */}
       {!doc.contractor_id && contractors && contractors.length > 0 && ['invoice', 'receipt', 'certificate'].includes(doc.document_type) ? (
-        <Button
-          label="Link to a contractor"
-          variant="ghost"
-          onPress={() => {
-            const options = [
-              ...(contractors ?? []).map((c) => ({
-                text: `${c.name}${c.trade ? ` (${c.trade})` : ''}`,
-                onPress: () => linkDoc.mutate({ documentId: id, contractorId: c.id }),
-              })),
-              { text: 'Skip', style: 'cancel' as const },
-            ];
-            Alert.alert('Who did this work?', undefined, options);
-          }}
-        />
+        <Card>
+          <View style={{ gap: theme.spacing.sm }}>
+            <Text variant="headline">Who did this work?</Text>
+            {contractors.slice(0, 8).map((contractor) => (
+              <ListRow
+                key={contractor.id}
+                title={contractor.name}
+                subtitle={contractor.trade ?? undefined}
+                showChevron
+                onPress={() => linkDoc.mutate({ documentId: id, contractorId: contractor.id })}
+              />
+            ))}
+          </View>
+        </Card>
       ) : null}
 
       {/* Renewable document: supersedes previous version */}

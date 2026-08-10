@@ -14,6 +14,7 @@ export * from './QuickAction';
 export * from './RootErrorBoundary';
 export * from './Screen';
 export * from './SectionHeader';
+export * from './SectionErrorBoundary';
 export * from './Skeleton';
 export * from './StatCard';
 export * from './Text';

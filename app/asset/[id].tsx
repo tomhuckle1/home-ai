@@ -3,7 +3,9 @@ import { Image } from 'expo-image';
 import * as Linking from 'expo-linking';
 import * as Sharing from 'expo-sharing';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
+import QRCode from 'react-native-qrcode-svg';
 
 import { Badge, Button, Card, ListRow, Screen, SectionHeader, Text, useTheme } from '@/src/design-system';
 import { useAsset, useDeleteAsset, useUpdateAsset } from '@/src/hooks/useAssets';
@@ -44,6 +46,7 @@ export default function AssetDetailScreen() {
   const trade = asset ? tradeForCategory(asset.category) : undefined;
   const { data: savedContractors } = useContractorsByTrade(asset?.property_id, trade);
   const { data: linkedDocs } = useDocumentsByAsset(id);
+  const [showQR, setShowQR] = useState(false);
   const { data: rooms } = useRooms(asset?.property_id);
 
   if (!asset) return null;
@@ -119,6 +122,9 @@ export default function AssetDetailScreen() {
                 <Field label="Purchase price" value={asset.purchase_price ? `£${asset.purchase_price}` : null} />
                 <Field label="Warranty provider" value={asset.warranty_provider} />
                 <Field label="Warranty expiry" value={asset.warranty_expiry} />
+                {linkedDocs && linkedDocs.filter((d) => d.document_type === 'warranty').length > 1 ? (
+                  <Text variant="caption" color="accent">Multiple warranty documents linked — check documents section below for extended warranties.</Text>
+                ) : null}
                 <Field label="Notes" value={asset.notes} />
               </>
             )}
@@ -146,9 +152,15 @@ export default function AssetDetailScreen() {
         {/* Quick actions */}
         <View style={{ gap: theme.spacing.xs }}>
           <SectionHeader title="Actions" />
-          <Card onPress={() => Alert.alert('QR Code', 'Print this QR code and stick it on the appliance. Anyone in your household can scan it to jump straight to this item\'s details.', [{ text: 'OK' }])}>
-            <ListRow leading={<Ionicons name="qr-code-outline" size={20} color={theme.colors.accent} />} title="Generate QR sticker" subtitle="Stick on the appliance for quick access" showChevron />
+          <Card onPress={() => setShowQR(!showQR)}>
+            <ListRow leading={<Ionicons name="qr-code-outline" size={20} color={theme.colors.accent} />} title={showQR ? "Hide QR code" : "Generate QR sticker"} subtitle="Stick on the appliance for quick access" showChevron />
           </Card>
+          {showQR ? (
+            <View style={{ alignItems: 'center', gap: theme.spacing.sm, padding: theme.spacing.md, backgroundColor: '#FFFFFF', borderRadius: theme.radius.lg }}>
+              <QRCode value={`homeai://asset/${id}`} size={180} />
+              <Text variant="caption" color="textSecondary" style={{ textAlign: 'center' }}>Print this and stick it on the appliance.{"\n"}Scan with your phone camera to open this item.</Text>
+            </View>
+          ) : null}
           {asset.brand || asset.model ? (
             <Card onPress={handleFindManual}>
               <ListRow leading={<Ionicons name="book-outline" size={20} color={theme.colors.accent} />} title="Find manual online" subtitle={`Search for ${[asset.brand, asset.model].filter(Boolean).join(' ')} manual`} showChevron />
