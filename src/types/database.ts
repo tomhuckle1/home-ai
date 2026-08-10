@@ -417,6 +417,8 @@ export type NotificationLogRow = {
   notification_type: string;
   sent_at: string;
   opened_at: string | null;
+  asset_id: string | null;
+  document_id: string | null;
 }
 
 export type PushTokenRow = {
@@ -427,6 +429,32 @@ export type PushTokenRow = {
 }
 export type PushTokenInsert = Pick<PushTokenRow, 'user_id' | 'token'>;
 
+export type AiUsageEventRow = {
+  id: string;
+  household_id: string;
+  property_id: string | null;
+  kind: 'document_extraction' | 'embedding' | 'ai_assistant';
+  model: string;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  created_at: string;
+}
+export type AiUsageEventInsert = Pick<AiUsageEventRow, 'household_id' | 'kind' | 'model'> &
+  Partial<Omit<AiUsageEventRow, 'id' | 'household_id' | 'kind' | 'model' | 'created_at'>>;
+
+export type HouseholdAiUsageMonthlyRow = {
+  household_id: string;
+  month: string;
+  kind: string;
+  model: string;
+  call_count: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  estimated_cost_gbp: number;
+}
+
 // supabase-js's generic query builder resolves embed/join call chains using a
 // `Relationships` array on every table; omitting it (even when we model no
 // relationships) makes some call chains silently collapse to `never`.
@@ -434,11 +462,9 @@ type NoRelationships = { Relationships: [] };
 
 export type Database = {
   public: {
-    // supabase-js's Schema generic constraint requires all three of these —
-    // omitting Views/Functions (even though we have none) makes the schema
-    // fail its `extends GenericSchema` check and every query silently
-    // degrades to `never`.
-    Views: Record<string, never>;
+    Views: {
+      household_ai_usage_monthly: { Row: HouseholdAiUsageMonthlyRow } & NoRelationships;
+    };
     Functions: {
       compute_home_health_score: {
         Args: { _property_id: string };
@@ -537,6 +563,11 @@ export type Database = {
         Row: PushTokenRow;
         Insert: PushTokenInsert;
         Update: Partial<PushTokenInsert>;
+      } & NoRelationships;
+      ai_usage_events: {
+        Row: AiUsageEventRow;
+        Insert: AiUsageEventInsert;
+        Update: Partial<AiUsageEventInsert>;
       } & NoRelationships;
     };
   };

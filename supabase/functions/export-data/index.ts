@@ -39,6 +39,8 @@ Deno.serve(async (req) => {
     const { data: maintenanceCompletions } = await supabase.from('maintenance_completions').select('*');
     const { data: contractors } = await supabase.from('contractors').select('*');
     const { data: timelineEvents } = await supabase.from('timeline_events').select('*');
+    const { data: aiConversations } = await supabase.from('ai_conversations').select('*');
+    const { data: aiMessages } = await supabase.from('ai_messages').select('*');
 
     const exportPayload = {
       exported_at: new Date().toISOString(),
@@ -54,6 +56,8 @@ Deno.serve(async (req) => {
       maintenance_completions: maintenanceCompletions,
       contractors,
       timeline_events: timelineEvents,
+      ai_conversations: aiConversations,
+      ai_messages: aiMessages,
     };
 
     return jsonResponse(exportPayload);

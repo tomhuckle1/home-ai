@@ -42,8 +42,12 @@ Deno.serve(async (req) => {
   // the stored snapshot, since signed URLs expire and shares live 90 days.
   for (const asset of snapshot.assets ?? []) {
     if (asset.primary_photo_path) {
+      // An asset's photo is always a copy of the document it was scanned
+      // from (see handleSaveAsItem in app/document/[id].tsx) — it lives in
+      // the 'documents' bucket, never 'property-photos' (nothing in the
+      // app ever uploads there).
       const { data } = await supabase.storage
-        .from('property-photos')
+        .from('documents')
         .createSignedUrl(asset.primary_photo_path, SIGNED_URL_TTL_SECONDS);
       asset.photo_url = data?.signedUrl ?? null;
     }
