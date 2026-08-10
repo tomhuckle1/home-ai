@@ -31,7 +31,7 @@ export default function AddVehicleScreen() {
     setSaving(true);
     setError(null);
     try {
-      const vehicle = await createVehicle.mutateAsync({
+      await createVehicle.mutateAsync({
         property_id: propertyId,
         registration: registration.trim().toUpperCase() || null,
         make: make.trim() || null,

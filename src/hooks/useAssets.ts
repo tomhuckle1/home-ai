@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
-import { DELETE_WINDOW_MESSAGE } from '@/src/lib/deleteWindow';
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { supabase } from '@/src/lib/supabase';
 import type { AssetInsert, AssetRow, AssetUpdate } from '@/src/types/database';
 
@@ -78,7 +78,7 @@ export function useDeleteAsset() {
     mutationFn: async (asset: Pick<AssetRow, 'id' | 'room_id'>) => {
       const { data, error } = await supabase.from('assets').delete().eq('id', asset.id).select('id');
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error(DELETE_WINDOW_MESSAGE);
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return asset;
     },
     onSuccess: (asset) => {

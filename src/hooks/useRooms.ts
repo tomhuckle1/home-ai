@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
-import { DELETE_WINDOW_MESSAGE } from '@/src/lib/deleteWindow';
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { supabase } from '@/src/lib/supabase';
 import type { RoomInsert, RoomRow } from '@/src/types/database';
 
@@ -57,7 +57,7 @@ export function useDeleteRoom() {
 
       const { data, error } = await supabase.from('rooms').delete().eq('id', room.id).select('id');
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error(DELETE_WINDOW_MESSAGE);
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return room;
     },
     onSuccess: (room) => {

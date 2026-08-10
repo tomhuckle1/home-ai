@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { supabase } from '@/src/lib/supabase';
 import type { MeterReadingInsert, MeterReadingRow, MeterType } from '@/src/types/database';
 
@@ -33,8 +34,9 @@ export function useDeleteMeterReading() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (reading: Pick<MeterReadingRow, 'id' | 'property_id'>) => {
-      const { error } = await supabase.from('meter_readings').delete().eq('id', reading.id);
+      const { data, error } = await supabase.from('meter_readings').delete().eq('id', reading.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return reading;
     },
     onSuccess: (r) => { queryClient.invalidateQueries({ queryKey: ['meter-readings', r.property_id] }); },

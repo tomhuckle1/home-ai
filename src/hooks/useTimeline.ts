@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-import { DELETE_WINDOW_MESSAGE } from '@/src/lib/deleteWindow';
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { supabase } from '@/src/lib/supabase';
 import type { TimelineEventInsert, TimelineEventRow } from '@/src/types/database';
 
@@ -57,7 +57,7 @@ export function useDeleteTimelineEvent() {
     mutationFn: async (event: Pick<TimelineEventRow, 'id' | 'property_id'>) => {
       const { data, error } = await supabase.from('timeline_events').delete().eq('id', event.id).select('id');
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error(DELETE_WINDOW_MESSAGE);
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return event;
     },
     onSuccess: (event) => {

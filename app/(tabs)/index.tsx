@@ -13,12 +13,11 @@ import { useProfile, useHousehold } from '@/src/hooks/useProfile';
 import { useProperties } from '@/src/hooks/useProperties';
 import { useRooms } from '@/src/hooks/useRooms';
 import { useSpendingSummary } from '@/src/hooks/useSpending';
-import { useInsurancePolicies, useVehicles } from '@/src/hooks/useVehiclesAndInsurance';
+import { useInsurancePolicies } from '@/src/hooks/useVehiclesAndInsurance';
 import { useWarrantyAlerts } from '@/src/hooks/useWarrantyAlerts';
 import { useSmartNudges } from '@/src/hooks/useSmartNudges';
 import { registerForPushNotificationsIfNeeded } from '@/src/lib/pushNotifications';
-import { useAllDocuments } from '@/src/hooks/useDocuments';
-import { policyTypeLabel } from '@/src/lib/display-labels';
+import { useDocumentsByProperty } from '@/src/hooks/useDocuments';
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -94,7 +93,7 @@ export default function HomeScreen() {
 function QuickStats({ propertyId, onRemindersPress }: { propertyId: string; onRemindersPress: () => void }) {
   const theme = useTheme();
   const { data: assets } = useAssetsByProperty(propertyId);
-  const { data: docs } = useAllDocuments('');
+  const { data: docs } = useDocumentsByProperty(propertyId);
   const { data: tasks } = useUpcomingMaintenance(propertyId);
   const itemCount = assets?.length ?? 0;
   const docCount = docs?.length ?? 0;

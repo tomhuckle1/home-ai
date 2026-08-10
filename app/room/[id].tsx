@@ -3,7 +3,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, View } from 'react-native';
 
-import { Badge, Button, Card, ChipSelect, EmptyState, ListRow, Screen, SectionHeader, Text, Thumbnail, useTheme } from '@/src/design-system';
+import { Badge, Button, Card, EmptyState, ListRow, Screen, SectionHeader, Text, Thumbnail, useTheme } from '@/src/design-system';
 import { useAssetsByRoom } from '@/src/hooks/useAssets';
 import { useDocumentsByRoom } from '@/src/hooks/useDocumentLinks';
 import { useDeleteRoom, useRoom, useUpdateRoom } from '@/src/hooks/useRooms';
@@ -145,11 +145,7 @@ export default function RoomDetailScreen() {
 
               {/* Delete room */}
               {room ? (
-                true ? (
-                  <Button label="Delete room" variant="danger" onPress={handleDelete} loading={deleteRoom.isPending} />
-                ) : (
-                  <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}></Text>
-                )
+                <Button label="Delete room" variant="danger" onPress={handleDelete} loading={deleteRoom.isPending} />
               ) : null}
             </View>
           }

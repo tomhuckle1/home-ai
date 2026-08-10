@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { supabase } from '@/src/lib/supabase';
 import type {
   InsurancePolicyInsert,
@@ -54,8 +55,9 @@ export function useDeleteVehicle() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (vehicle: Pick<VehicleRow, 'id' | 'property_id'>) => {
-      const { error } = await supabase.from('vehicles').delete().eq('id', vehicle.id);
+      const { data, error } = await supabase.from('vehicles').delete().eq('id', vehicle.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return vehicle;
     },
     onSuccess: (v) => { queryClient.invalidateQueries({ queryKey: ['vehicles', v.property_id] }); },
@@ -104,8 +106,9 @@ export function useDeleteInsurancePolicy() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (policy: Pick<InsurancePolicyRow, 'id' | 'property_id'>) => {
-      const { error } = await supabase.from('insurance_policies').delete().eq('id', policy.id);
+      const { data, error } = await supabase.from('insurance_policies').delete().eq('id', policy.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return policy;
     },
     onSuccess: (p) => { queryClient.invalidateQueries({ queryKey: ['insurance', p.property_id] }); },
@@ -142,8 +145,9 @@ export function useDeleteRoomDetail() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (detail: Pick<RoomDetailRow, 'id' | 'room_id'>) => {
-      const { error } = await supabase.from('room_details').delete().eq('id', detail.id);
+      const { data, error } = await supabase.from('room_details').delete().eq('id', detail.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return detail;
     },
     onSuccess: (d) => { queryClient.invalidateQueries({ queryKey: ['room-details', d.room_id] }); },

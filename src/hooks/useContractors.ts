@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { supabase } from '@/src/lib/supabase';
 import type { ContractorInsert, ContractorRow } from '@/src/types/database';
 
@@ -89,8 +90,9 @@ export function useDeleteContractor() {
 
   return useMutation({
     mutationFn: async (contractor: Pick<ContractorRow, 'id' | 'property_id'>) => {
-      const { error } = await supabase.from('contractors').delete().eq('id', contractor.id);
+      const { data, error } = await supabase.from('contractors').delete().eq('id', contractor.id).select('id');
       if (error) throw error;
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       return contractor;
     },
     onSuccess: (contractor) => {

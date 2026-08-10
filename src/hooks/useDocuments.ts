@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { AnalyticsEvent, track } from '@/src/lib/analytics';
-import { DELETE_WINDOW_MESSAGE } from '@/src/lib/deleteWindow';
+import { DELETE_BLOCKED_MESSAGE } from '@/src/lib/deleteGuard';
 import { toEdgeFunctionError } from '@/src/lib/functionError';
 import { removeStorageFile } from '@/src/lib/storage';
 import { supabase } from '@/src/lib/supabase';
@@ -113,7 +113,7 @@ export function useDeleteDocument() {
     mutationFn: async (document: Pick<DocumentRow, 'id' | 'property_id' | 'file_path'>) => {
       const { data, error } = await supabase.from('documents').delete().eq('id', document.id).select('id');
       if (error) throw error;
-      if (!data || data.length === 0) throw new Error(DELETE_WINDOW_MESSAGE);
+      if (!data || data.length === 0) throw new Error(DELETE_BLOCKED_MESSAGE);
       // Only remove the storage object once the row is confirmed deleted —
       // an RLS-blocked delete must leave the photo intact too.
       await removeStorageFile('documents', document.file_path);

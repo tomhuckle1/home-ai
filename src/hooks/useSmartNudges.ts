@@ -94,6 +94,9 @@ export function useSmartNudges(propertyId: string | undefined) {
         if (taxDays !== null && taxDays <= 14 && taxDays >= 0) {
           nudges.push({ id: `tax-${v.id}`, icon: '🚗', title: `${name} tax expires in ${taxDays} days`, description: 'Renew at gov.uk', tone: 'warning' });
         }
+        if (insDays !== null && insDays <= 14 && insDays >= 0) {
+          nudges.push({ id: `vehicle-insurance-${v.id}`, icon: '🔑', title: `${name} insurance renews in ${insDays} days`, description: 'Shop around before it auto-renews', tone: insDays <= 7 ? 'warning' : 'info' });
+        }
       }
 
       // Missing smoke alarms
