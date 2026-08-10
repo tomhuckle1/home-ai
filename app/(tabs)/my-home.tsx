@@ -184,9 +184,6 @@ function OverviewView({ property, refetch, isRefetching }: { property: PropertyR
       <Card onPress={() => router.push({ pathname: '/energy', params: { propertyId: property.id } })}>
         <ListRow leading={<Ionicons name="flash-outline" size={20} color={theme.colors.accent} />} title="Energy & meters" subtitle="Track electricity, gas, water, and solar" showChevron />
       </Card>
-      <Card onPress={() => router.push('/moving')}>
-        <ListRow leading={<Ionicons name="swap-horizontal-outline" size={20} color={theme.colors.accent} />} title="Moving house checklist" subtitle="Step-by-step guide for moving in" showChevron />
-      </Card>
       <Card onPress={() => router.push(`/passport/${property.id}`)}>
         <ListRow leading={<Ionicons name="ribbon-outline" size={20} color={theme.colors.accent} />} title="Home Passport" subtitle="Generate a shareable property record" showChevron />
       </Card>

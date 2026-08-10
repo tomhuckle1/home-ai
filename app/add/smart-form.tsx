@@ -10,6 +10,7 @@ import { useRooms, useCreateRoom } from '@/src/hooks/useRooms';
 import { SMART_CATEGORIES } from '@/src/lib/smart-templates';
 
 const FREQUENCY_OPTIONS = [
+  { value: 'weekly', label: 'Weekly' },
   { value: 'monthly', label: 'Monthly' },
   { value: 'quarterly', label: 'Every 3 months' },
   { value: 'biannual', label: 'Every 6 months' },
@@ -144,7 +145,9 @@ export default function SmartFormScreen() {
             <Text variant="title1">{category.label}</Text>
             <Text variant="footnote" color="textSecondary">{category.description}</Text>
           </View>
-          <Text style={{ fontSize: 32 }}>{category.icon}</Text>
+          <View style={{ width: 48, height: 48, borderRadius: 12, backgroundColor: theme.colors.accentMuted, alignItems: 'center', justifyContent: 'center' }}>
+            <Text style={{ fontSize: 28, lineHeight: 34 }}>{category.icon}</Text>
+          </View>
         </View>
 
         {/* Quick items */}
@@ -240,6 +243,7 @@ export default function SmartFormScreen() {
 function calculateNextDue(frequencyType: string): string {
   const now = new Date();
   switch (frequencyType) {
+    case 'weekly': now.setDate(now.getDate() + 7); break;
     case 'monthly': now.setMonth(now.getMonth() + 1); break;
     case 'quarterly': now.setMonth(now.getMonth() + 3); break;
     case 'biannual': now.setMonth(now.getMonth() + 6); break;

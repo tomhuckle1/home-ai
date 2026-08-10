@@ -113,8 +113,6 @@ function RootNavigator({ status }: { status: 'signedIn' | 'signedOut' }) {
         {/* Passport */}
         <Stack.Screen name="passport/[propertyId]" options={{ headerShown: true, title: 'Home Passport' }} />
 
-        {/* Moving house */}
-        <Stack.Screen name="moving/index" options={{ headerShown: false }} />
 
         {/* Legal */}
         <Stack.Screen name="legal/privacy" options={{ headerShown: true, title: 'Privacy Policy' }} />
