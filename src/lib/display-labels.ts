@@ -1,8 +1,8 @@
 import type { InsurancePolicyType, MeterType } from '@/src/types/database';
 
 export const POLICY_TYPE_LABELS: Record<InsurancePolicyType | string, string> = {
-  home_buildings: 'Home Buildings',
-  home_contents: 'Home Contents',
+  home_buildings: 'Buildings Insurance',
+  home_contents: 'Contents Insurance',
   car: 'Car Insurance',
   life: 'Life Insurance',
   pet: 'Pet Insurance',

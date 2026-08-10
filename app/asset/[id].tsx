@@ -26,9 +26,20 @@ function Field({ label, value }: { label: string; value?: string | null }) {
   );
 }
 
-function tradeForCategory(category: string): string {
-  const map: Record<string, string> = { appliance: 'appliance repair', heating: 'heating engineer', plumbing: 'plumber', electrical: 'electrician', structural: 'builder', fixture: 'handyman', garden: 'gardener', security: 'security' };
-  return map[category] ?? 'tradesman';
+function tradeForCategory(category: string): { trade: string; label: string } {
+  const map: Record<string, { trade: string; label: string }> = {
+    appliance: { trade: 'appliance repair', label: 'appliance repair specialist' },
+    heating: { trade: 'heating engineer', label: 'heating engineer' },
+    plumbing: { trade: 'plumber', label: 'plumber' },
+    electrical: { trade: 'electrician', label: 'electrician' },
+    structural: { trade: 'builder', label: 'builder' },
+    fixture: { trade: 'handyman', label: 'handyman' },
+    garden: { trade: 'gardener', label: 'gardener' },
+    security: { trade: 'security systems', label: 'security specialist' },
+    furniture: { trade: 'furniture repair', label: 'furniture repair specialist' },
+    other: { trade: 'tradesman', label: 'tradesperson' },
+  };
+  return map[category] ?? { trade: 'tradesman', label: 'tradesperson' };
 }
 
 function docIcon(type: DocumentType): keyof typeof Ionicons.glyphMap {
@@ -43,8 +54,8 @@ export default function AssetDetailScreen() {
   const deleteAsset = useDeleteAsset();
   const updateAsset = useUpdateAsset();
   const { data: imageUrl } = useSignedUrl('documents', asset?.primary_photo_path);
-  const trade = asset ? tradeForCategory(asset.category) : undefined;
-  const { data: savedContractors } = useContractorsByTrade(asset?.property_id, trade);
+  const tradeInfo = asset ? tradeForCategory(asset.category) : undefined;
+  const { data: savedContractors } = useContractorsByTrade(asset?.property_id, tradeInfo?.trade);
   const { data: linkedDocs } = useDocumentsByAsset(id);
   const [showQR, setShowQR] = useState(false);
   const { data: rooms } = useRooms(asset?.property_id);
@@ -73,11 +84,11 @@ export default function AssetDetailScreen() {
 
   function handleFindManual() {
     const query = [asset!.brand, asset!.model, 'user manual PDF'].filter(Boolean).join(' ');
-    Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(query)}`);
+    Linking.openURL(`https://www.google.com/search?q=${encodeURIComponent(query)}`).catch(() => {});
   }
 
   function handleFixIt() {
-    Linking.openURL(`https://www.google.com/maps/search/${encodeURIComponent([trade, 'near me'].filter(Boolean).join(' '))}`);
+    Linking.openURL(`https://www.google.com/maps/search/${encodeURIComponent([tradeInfo?.trade ?? 'tradesperson', 'near me'].join(' '))}`).catch(() => {});
   }
 
   return (
@@ -167,7 +178,7 @@ export default function AssetDetailScreen() {
             </Card>
           ) : null}
           <Card onPress={handleFixIt}>
-            <ListRow leading={<Ionicons name="construct-outline" size={20} color={theme.colors.accent} />} title={`Find a ${trade}`} subtitle="Search for local tradespeople" showChevron />
+            <ListRow leading={<Ionicons name="construct-outline" size={20} color={theme.colors.accent} />} title={`Find a ${tradeInfo?.label ?? 'tradesperson'}`} subtitle="Search for local tradespeople" showChevron />
           </Card>
           <Card onPress={() => router.push({ pathname: '/maintenance/new', params: { propertyId: asset.property_id, assetId: asset.id } })}>
             <ListRow leading={<Ionicons name="alarm-outline" size={20} color={theme.colors.accent} />} title="Set a reminder" subtitle="Schedule maintenance for this item" showChevron />

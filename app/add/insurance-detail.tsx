@@ -9,7 +9,7 @@ import { policyTypeLabel } from '@/src/lib/display-labels';
 import type { InsurancePolicyRow, InsurancePolicyType } from '@/src/types/database';
 
 const POLICY_TYPES: { value: InsurancePolicyType; label: string }[] = [
-  { value: 'home_buildings', label: 'Home Buildings' },
+  { value: 'home_buildings', label: 'Buildings' },
   { value: 'home_contents', label: 'Home Contents' },
   { value: 'car', label: 'Car' },
   { value: 'life', label: 'Life' },

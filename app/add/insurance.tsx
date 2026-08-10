@@ -9,7 +9,7 @@ import { useCreateInsurancePolicy } from '@/src/hooks/useVehiclesAndInsurance';
 import type { InsurancePolicyType } from '@/src/types/database';
 
 const POLICY_TYPES: { value: InsurancePolicyType; label: string }[] = [
-  { value: 'home_buildings', label: 'Home buildings' },
+  { value: 'home_buildings', label: 'Buildings' },
   { value: 'home_contents', label: 'Home contents' },
   { value: 'car', label: 'Car' },
   { value: 'life', label: 'Life' },

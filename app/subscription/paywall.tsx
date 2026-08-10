@@ -71,7 +71,9 @@ export default function PaywallScreen() {
       <ScrollView contentContainerStyle={{ paddingVertical: theme.spacing.lg, gap: theme.spacing.lg }}>
         {/* Header with logo */}
         <View style={{ alignItems: 'center', gap: theme.spacing.sm }}>
-          <Image source={require('@/assets/images/logo.png')} style={{ width: 80, height: 80, borderRadius: 20 }} resizeMode="contain" />
+          <View style={{ width: 90, height: 90, borderRadius: 22, backgroundColor: '#F0F4FF', alignItems: 'center', justifyContent: 'center' }}>
+            <Image source={require('@/assets/images/logo.png')} style={{ width: 72, height: 72 }} resizeMode="contain" />
+          </View>
           <Badge label="HomeAI Premium" tone="accent" />
           <Text variant="title1" style={{ textAlign: 'center' }}>Unlock the full power of HomeAI</Text>
           <Text variant="body" color="textSecondary" style={{ textAlign: 'center', lineHeight: 22 }}>

@@ -1,8 +1,8 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Alert, ScrollView, View } from 'react-native';
 
-import { Button, ChipSelect, Screen, Text, TextField, useTheme } from '@/src/design-system';
+import { Button, ChipSelect, DateInput, Screen, Text, TextField, useTheme } from '@/src/design-system';
 import { useAsset, useUpdateAsset } from '@/src/hooks/useAssets';
 import { ASSET_CATEGORIES } from '@/src/lib/asset-categories';
 import type { AssetCategory, AssetStatus } from '@/src/types/database';
