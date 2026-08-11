@@ -8,6 +8,7 @@ import { createEmbedding, extractUsage, logAiUsage } from '../_shared/openai.ts'
 import {
   buildEmbeddingInput,
   buildOpenAiRequestBody,
+  errorMessage,
   normalizeExtractionResult,
   type RawExtractionResult,
 } from './extraction.ts';
@@ -126,7 +127,7 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown extraction error';
+    const message = errorMessage(error);
     await supabase
       .from('documents')
       .update({ extraction_status: 'failed', extraction_error: message })
@@ -151,8 +152,12 @@ async function callOpenAi(imageUrl: string): Promise<{ result: RawExtractionResu
   }
 
   const payload = await response.json();
-  const content = payload.choices?.[0]?.message?.content;
-  if (typeof content !== 'string') throw new Error('OpenAI response did not contain extraction content');
+  const message = payload.choices?.[0]?.message;
+  const content = message?.content;
+  if (typeof content !== 'string') {
+    const refusal = typeof message?.refusal === 'string' ? message.refusal : null;
+    throw new Error(refusal ? `OpenAI declined to read this image: ${refusal}` : 'OpenAI response did not contain extraction content');
+  }
 
   return { result: JSON.parse(content) as RawExtractionResult, usage: extractUsage(payload) };
 }

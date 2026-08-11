@@ -1,4 +1,4 @@
-import { buildEmbeddingInput, buildOpenAiRequestBody, normalizeExtractionResult } from './extraction';
+import { buildEmbeddingInput, buildOpenAiRequestBody, errorMessage, normalizeExtractionResult } from './extraction';
 
 describe('normalizeExtractionResult', () => {
   it('passes through a fully well-formed result', () => {
@@ -91,6 +91,32 @@ describe('buildEmbeddingInput', () => {
     const input = buildEmbeddingInput(normalizeExtractionResult({}));
     expect(input.length).toBeGreaterThan(0);
     expect(input).toContain('Document type: other');
+  });
+});
+
+describe('errorMessage', () => {
+  it('reads .message off a real Error', () => {
+    expect(errorMessage(new Error('boom'))).toBe('boom');
+  });
+
+  it('reads .message off a plain error-shaped object (e.g. a PostgrestError)', () => {
+    expect(errorMessage({ message: 'permission denied for table documents', code: '42501' })).toBe(
+      'permission denied for table documents',
+    );
+  });
+
+  it('passes through a raw thrown string', () => {
+    expect(errorMessage('something broke')).toBe('something broke');
+  });
+
+  it('stringifies an object with no usable message rather than hiding it', () => {
+    expect(errorMessage({ code: 'PGRST301' })).toBe('{"code":"PGRST301"}');
+  });
+
+  it('falls back to a generic message only when there is truly nothing to show', () => {
+    expect(errorMessage(null)).toBe('Unknown extraction error');
+    expect(errorMessage(undefined)).toBe('Unknown extraction error');
+    expect(errorMessage('')).toBe('Unknown extraction error');
   });
 });
 

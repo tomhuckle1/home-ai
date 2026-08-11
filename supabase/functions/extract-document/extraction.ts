@@ -149,6 +149,29 @@ export function buildEmbeddingInput(normalized: NormalizedExtraction): string {
   return lines.join('\n');
 }
 
+/**
+ * Turns whatever got thrown into a readable string. Real Error instances
+ * (including PostgrestError, which extends Error) are the common case, but
+ * a thrown value isn't guaranteed to be one — this still finds something
+ * useful in a plain error-shaped object or a raw string rather than
+ * collapsing to an opaque "Unknown extraction error" that hides the real
+ * reason from both the user and whoever's debugging it.
+ */
+export function errorMessage(error: unknown): string {
+  if (error instanceof Error && error.message) return error.message;
+  if (error && typeof error === 'object') {
+    const maybeMessage = (error as { message?: unknown }).message;
+    if (typeof maybeMessage === 'string' && maybeMessage) return maybeMessage;
+    try {
+      return JSON.stringify(error);
+    } catch {
+      // Not serializable — fall through to the generic message below.
+    }
+  }
+  if (typeof error === 'string' && error) return error;
+  return 'Unknown extraction error';
+}
+
 export function buildOpenAiRequestBody(imageUrl: string, model: string) {
   return {
     model,
