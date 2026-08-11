@@ -118,6 +118,7 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
 
   async function handleConfirm() {
     const parsedAmount = amount.trim() ? Number(amount) : null;
+    const wasFirstSave = doc.extraction_status !== 'completed';
     await updateDocument.mutateAsync({
       id,
       update: {
@@ -132,6 +133,10 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         extraction_status: 'completed',
       },
     });
+    // Only the first confirmation should leave the screen — editing an
+    // already-saved document (via "Save changes") stays put, matching
+    // every other edit screen in the app.
+    if (wasFirstSave) router.back();
   }
 
   function handleDelete() {
@@ -300,13 +305,7 @@ function DocumentReviewForm({ id, doc }: { id: string; doc: DocumentRow }) {
         </Card>
       ) : null}
 
-      {true ? (
-        <Button label="Delete document" variant="danger" onPress={handleDelete} loading={deleteDocument.isPending} />
-      ) : (
-        <Text variant="footnote" color="textTertiary" style={{ textAlign: 'center' }}>
-          This can no longer be deleted — it&apos;s past the 30-minute window for undoing a mistake.
-        </Text>
-      )}
+      <Button label="Delete document" variant="danger" onPress={handleDelete} loading={deleteDocument.isPending} />
     </View>
   );
 }

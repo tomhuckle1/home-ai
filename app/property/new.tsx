@@ -1,5 +1,5 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, ScrollView, View } from 'react-native';
 
@@ -22,6 +22,7 @@ type PostcodeSuggestion = { postcode: string };
 
 export default function NewPropertyScreen() {
   const theme = useTheme();
+  const { onboarding } = useLocalSearchParams<{ onboarding?: string }>();
   const { data: household } = useHousehold();
   const createProperty = useCreateProperty();
 
@@ -75,14 +76,18 @@ export default function NewPropertyScreen() {
     if (!household) return;
     setError(null);
     try {
-      await createProperty.mutateAsync({
+      const property = await createProperty.mutateAsync({
         household_id: household.id,
         address_line1: addressLine1.trim(),
         city: city.trim() || null,
         postcode: finalPostcode.trim() || postcode.trim() || null,
         property_type: propertyType ?? null,
       });
-      router.replace('/(tabs)');
+      if (onboarding === '1') {
+        router.replace({ pathname: '/onboarding-scan', params: { propertyId: property.id } });
+      } else {
+        router.replace('/(tabs)');
+      }
     } catch (err) {
       setError(friendlyMessage(err, 'Could not save this property.'));
     }

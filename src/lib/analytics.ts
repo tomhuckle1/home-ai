@@ -10,6 +10,8 @@ export const AnalyticsEvent = {
   SignedUp: 'signed_up',
   SignedIn: 'signed_in',
   SignedOut: 'signed_out',
+  OnboardingStarted: 'onboarding_started',
+  OnboardingCompleted: 'onboarding_completed',
   PropertyCreated: 'property_created',
   RoomCreated: 'room_created',
   AssetCaptured: 'asset_captured',
