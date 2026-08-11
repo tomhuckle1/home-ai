@@ -99,9 +99,30 @@ describe('errorMessage', () => {
     expect(errorMessage(new Error('boom'))).toBe('boom');
   });
 
+  it('reads .message off a real Error even when instanceof would fail (cross-realm/module-boundary error)', () => {
+    // Simulates an error-shaped object crossing a realm boundary, where
+    // `instanceof Error` can't be trusted — e.g. Deno's npm: compat layer
+    // resolving a different copy of a package than the one that threw.
+    class FakeRealmError {
+      message: string;
+      constructor(message: string) {
+        this.message = message;
+      }
+    }
+    const fakeError = new FakeRealmError('cross-realm failure');
+    expect(fakeError instanceof Error).toBe(false);
+    expect(errorMessage(fakeError)).toBe('cross-realm failure');
+  });
+
   it('reads .message off a plain error-shaped object (e.g. a PostgrestError)', () => {
     expect(errorMessage({ message: 'permission denied for table documents', code: '42501' })).toBe(
       'permission denied for table documents',
+    );
+  });
+
+  it('falls back to .hint when there is no .message (Postgres RAISE EXCEPTION ... USING hint)', () => {
+    expect(errorMessage({ hint: 'Upgrade to Premium for unlimited documents.' })).toBe(
+      'Upgrade to Premium for unlimited documents.',
     );
   });
 
@@ -111,6 +132,13 @@ describe('errorMessage', () => {
 
   it('stringifies an object with no usable message rather than hiding it', () => {
     expect(errorMessage({ code: 'PGRST301' })).toBe('{"code":"PGRST301"}');
+  });
+
+  it('finds a message stored as a non-enumerable property, the way built-in Error puts it (JSON.stringify alone would see "{}")', () => {
+    const error: Record<string, unknown> = {};
+    Object.defineProperty(error, 'message', { value: 'hidden but readable', enumerable: false });
+    expect(JSON.stringify(error)).toBe('{}');
+    expect(errorMessage(error)).toBe('hidden but readable');
   });
 
   it('falls back to a generic message only when there is truly nothing to show', () => {

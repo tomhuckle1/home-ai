@@ -128,6 +128,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ success: true });
   } catch (error) {
     const message = errorMessage(error);
+    console.error('Extraction failed for document', documentId, error);
     await supabase
       .from('documents')
       .update({ extraction_status: 'failed', extraction_error: message })

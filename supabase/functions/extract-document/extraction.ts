@@ -152,21 +152,34 @@ export function buildEmbeddingInput(normalized: NormalizedExtraction): string {
 /**
  * Turns whatever got thrown into a readable string. Real Error instances
  * (including PostgrestError, which extends Error) are the common case, but
- * a thrown value isn't guaranteed to be one — this still finds something
- * useful in a plain error-shaped object or a raw string rather than
- * collapsing to an opaque "Unknown extraction error" that hides the real
- * reason from both the user and whoever's debugging it.
+ * a thrown value isn't guaranteed to behave like one — `instanceof Error`
+ * can fail for an error-shaped object crossing a module/realm boundary
+ * (e.g. Deno's npm: compat layer resolving a different copy of a package
+ * than the one that constructed the error), so this reads `.message` via
+ * plain property access rather than gating on `instanceof` first. It also
+ * doesn't trust JSON.stringify to find `.message`/`.stack` on its own —
+ * those are non-enumerable on a real Error, so JSON.stringify(realError)
+ * is famously just "{}". Only after checking the known Postgrest/Supabase
+ * error fields and every own property (enumerable or not) does this give
+ * up with the generic message.
  */
 export function errorMessage(error: unknown): string {
-  if (error instanceof Error && error.message) return error.message;
   if (error && typeof error === 'object') {
-    const maybeMessage = (error as { message?: unknown }).message;
-    if (typeof maybeMessage === 'string' && maybeMessage) return maybeMessage;
-    try {
-      return JSON.stringify(error);
-    } catch {
-      // Not serializable — fall through to the generic message below.
+    const obj = error as Record<string, unknown>;
+    for (const key of ['message', 'hint', 'details', 'error_description', 'error']) {
+      const value = obj[key];
+      if (typeof value === 'string' && value) return value;
     }
+    try {
+      const ownProps: Record<string, unknown> = {};
+      for (const key of Object.getOwnPropertyNames(obj)) ownProps[key] = obj[key];
+      const serialized = JSON.stringify(ownProps);
+      if (serialized && serialized !== '{}') return serialized;
+    } catch {
+      // Not serializable — fall through.
+    }
+    const str = String(obj);
+    if (str && str !== '[object Object]') return str;
   }
   if (typeof error === 'string' && error) return error;
   return 'Unknown extraction error';
