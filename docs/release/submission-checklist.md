@@ -11,6 +11,10 @@ environment, so it's listed rather than claimed.
       AI extraction, semantic search, timeline, maintenance reminders,
       Home Health Score, AI assistant (RAG, grounded + cited), family
       sharing, Home Passport, subscriptions (RevenueCat).
+- [x] Vehicles (MOT/tax/insurance/service tracking), insurance policies,
+      room details (paint/flooring/etc.), energy meter readings,
+      document-to-asset linking, smart nudges, offline upload queue,
+      and household-wide search — added after the initial Phase 5 pass.
 - [x] Free-tier limits enforced server-side (DB triggers), not just hidden
       in the UI.
 - [x] Account deletion (`delete-account` Edge Function) and data export
@@ -97,11 +101,14 @@ environment, so it's listed rather than claimed.
       yet). Without it, `registerForPushNotificationsIfNeeded()` silently
       no-ops rather than failing — the rest of the app is unaffected —
       but no device will ever actually register a push token.
-- [ ] Schedule `send-maintenance-reminders` to run daily (Supabase
-      Dashboard → Edge Functions → your function → Cron, or a `pg_cron` +
-      `pg_net` job calling it) — the function itself is deployed like any
-      other Edge Function, but nothing invokes it on its own; it needs an
-      explicit schedule set up in the Supabase dashboard.
+- [ ] `pg_cron` scheduling for `send-maintenance-reminders` is now written
+      (migration 19) but needs two things only a human with dashboard
+      access can do: confirm `pg_cron` is available on your Supabase plan,
+      and set `app.settings.supabase_url` / `app.settings.service_role_key`
+      once via the SQL editor. Exact commands in `docs/deployment.md`. The
+      migration degrades gracefully (skips with a NOTICE) until both are
+      in place, so it won't block anything else — but reminders won't
+      actually fire on a schedule until this is done.
 
 ## Suggested order
 
