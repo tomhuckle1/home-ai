@@ -141,10 +141,17 @@ describe('errorMessage', () => {
     expect(errorMessage(error)).toBe('hidden but readable');
   });
 
-  it('falls back to a generic message only when there is truly nothing to show', () => {
-    expect(errorMessage(null)).toBe('Unknown extraction error');
-    expect(errorMessage(undefined)).toBe('Unknown extraction error');
-    expect(errorMessage('')).toBe('Unknown extraction error');
+  it('falls back to a generic message that names the shape of the thrown value, when there is truly nothing to show', () => {
+    expect(errorMessage(null)).toBe('Unknown extraction error (thrown value was null)');
+    expect(errorMessage(undefined)).toBe('Unknown extraction error (thrown value was undefined)');
+    expect(errorMessage('')).toBe('Unknown extraction error (thrown value was string)');
+    expect(errorMessage(42)).toBe('Unknown extraction error (thrown value was number)');
+  });
+
+  it('names the constructor of a genuinely empty error-shaped object', () => {
+    class CustomEmptyError {}
+    expect(errorMessage(new CustomEmptyError())).toBe('Unknown extraction error (empty CustomEmptyError)');
+    expect(errorMessage(Object.create(null))).toBe('Unknown extraction error (empty Object)');
   });
 });
 

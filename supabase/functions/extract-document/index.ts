@@ -70,15 +70,22 @@ Deno.serve(async (req) => {
 
   await supabase.from('documents').update({ extraction_status: 'processing' }).eq('id', documentId);
 
+  // Tracked outside the try so the catch below can say which stage failed —
+  // errorMessage() alone tells you *what* was thrown, not *where*.
+  let stage = 'signing_url';
   try {
     const { data: signedUrlData, error: signedUrlError } = await supabase.storage
       .from('documents')
       .createSignedUrl(document.file_path, SIGNED_URL_TTL_SECONDS);
     if (signedUrlError || !signedUrlData) throw new Error(signedUrlError?.message ?? 'Could not sign file URL');
 
+    stage = 'calling_openai';
     const { result: raw, usage: extractionUsage } = await callOpenAi(signedUrlData.signedUrl);
+
+    stage = 'normalizing_result';
     const normalized = normalizeExtractionResult(raw);
 
+    stage = 'logging_usage';
     if (householdId) {
       await logAiUsage(supabase, {
         householdId,
@@ -89,6 +96,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    stage = 'saving_document';
     const { error: updateError } = await supabase
       .from('documents')
       .update({
@@ -127,8 +135,8 @@ Deno.serve(async (req) => {
 
     return jsonResponse({ success: true });
   } catch (error) {
-    const message = errorMessage(error);
-    console.error('Extraction failed for document', documentId, error);
+    const message = `[${stage}] ${errorMessage(error)}`;
+    console.error('Extraction failed for document', documentId, 'at stage', stage, error);
     await supabase
       .from('documents')
       .update({ extraction_status: 'failed', extraction_error: message })

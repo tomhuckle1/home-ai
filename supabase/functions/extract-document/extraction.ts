@@ -178,11 +178,20 @@ export function errorMessage(error: unknown): string {
     } catch {
       // Not serializable — fall through.
     }
-    const str = String(obj);
-    if (str && str !== '[object Object]') return str;
+    try {
+      const str = String(obj);
+      if (str && str !== '[object Object]') return str;
+    } catch {
+      // A null-prototype object has no toString to call — fall through.
+    }
+    // Truly nothing extractable — say what shape of nothing it was rather
+    // than a completely opaque message, so this is diagnosable from the
+    // extraction_error text alone without needing separate function logs.
+    const ctorName = (obj as { constructor?: { name?: string } }).constructor?.name ?? 'Object';
+    return `Unknown extraction error (empty ${ctorName})`;
   }
   if (typeof error === 'string' && error) return error;
-  return 'Unknown extraction error';
+  return `Unknown extraction error (thrown value was ${error === null ? 'null' : typeof error})`;
 }
 
 export function buildOpenAiRequestBody(imageUrl: string, model: string) {
